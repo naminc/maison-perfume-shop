@@ -11,15 +11,30 @@ type ApiConnectionError = AxiosError & {
   __apiConnectionNotified?: boolean;
 };
 
+function isLikelyHtmlResponse(data: unknown) {
+  return typeof data === "string" && /<!doctype|<html/i.test(data);
+}
+
+function isUnexpectedApiEndpointResponse(error: AxiosError) {
+  const status = error.response?.status;
+  const contentType = String(error.response?.headers?.["content-type"] ?? "");
+
+  return (
+    (status === 404 || status === 405) &&
+    (!contentType.includes("application/json") || isLikelyHtmlResponse(error.response?.data))
+  );
+}
+
 export function isApiConnectionError(error: unknown) {
   if (!axios.isAxiosError(error)) return false;
 
   return (
-    !error.response &&
-    (error.code === "ERR_NETWORK" ||
-      error.code === "ECONNABORTED" ||
-      error.message === "Network Error" ||
-      !!error.request)
+    (!error.response &&
+      (error.code === "ERR_NETWORK" ||
+        error.code === "ECONNABORTED" ||
+        error.message === "Network Error" ||
+        !!error.request)) ||
+    isUnexpectedApiEndpointResponse(error)
   );
 }
 
