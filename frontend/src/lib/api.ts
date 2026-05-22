@@ -7,7 +7,13 @@ const API_CONNECTION_ERROR_MESSAGE =
 
 let lastConnectionToastAt = 0;
 
-function isApiConnectionError(error: AxiosError) {
+type ApiConnectionError = AxiosError & {
+  __apiConnectionNotified?: boolean;
+};
+
+export function isApiConnectionError(error: unknown) {
+  if (!axios.isAxiosError(error)) return false;
+
   return (
     !error.response &&
     (error.code === "ERR_NETWORK" ||
@@ -17,11 +23,16 @@ function isApiConnectionError(error: AxiosError) {
   );
 }
 
+export function wasApiConnectionNotified(error: unknown) {
+  return axios.isAxiosError(error) && !!(error as ApiConnectionError).__apiConnectionNotified;
+}
+
 function notifyApiConnectionError(error: unknown) {
   if (!axios.isAxiosError(error)) return;
   if (!isApiConnectionError(error)) return;
 
   error.message = API_CONNECTION_ERROR_MESSAGE;
+  (error as ApiConnectionError).__apiConnectionNotified = true;
 
   const now = Date.now();
   if (now - lastConnectionToastAt < 4000) return;

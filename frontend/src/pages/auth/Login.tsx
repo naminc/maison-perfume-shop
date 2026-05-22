@@ -10,6 +10,7 @@ import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import AuthLayout from "@/layouts/AuthLayout";
 import { useLogin } from "@/hooks/useAuthMutations";
 import { loginSchema, type LoginFormValues } from "@/schemas/auth";
+import { wasApiConnectionNotified } from "@/lib/api";
 import type { ApiErrorResponse } from "@/types/auth";
 
 type FormValues = LoginFormValues;
@@ -28,6 +29,7 @@ export default function Login() {
         navigate(redirect?.startsWith("/admin") ? redirect : "/account");
       },
       onError: (error) => {
+        if (wasApiConnectionNotified(error)) return;
         const err = error as AxiosError<ApiErrorResponse>;
         toast.error(err.response?.data?.message ?? "Đăng nhập thất bại.");
       },

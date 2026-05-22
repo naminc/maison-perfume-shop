@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProfile, useUpdateProfile } from "@/hooks/useAccount";
+import { wasApiConnectionNotified } from "@/lib/api";
 import { applyApiErrors } from "@/lib/form-utils";
 import { getInitials } from "@/lib/utils";
 import type { ApiErrorResponse } from "@/types/auth";
@@ -41,6 +42,7 @@ export default function Profile() {
       {
         onSuccess: () => toast.success('Đã cập nhật thông tin tài khoản.'),
         onError: (error) => {
+          if (wasApiConnectionNotified(error)) return;
           const err = error as AxiosError<ApiErrorResponse<FormValues>>;
           if (applyApiErrors(err.response?.data?.errors, setError)) return;
           toast.error(err.response?.data?.message ?? 'Cập nhật thất bại.');

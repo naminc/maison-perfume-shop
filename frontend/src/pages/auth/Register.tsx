@@ -9,6 +9,7 @@ import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import AuthLayout from "@/layouts/AuthLayout";
 import { useRegister } from "@/hooks/useAuthMutations";
 import { registerSchema, type RegisterFormValues } from "@/schemas/auth";
+import { wasApiConnectionNotified } from "@/lib/api";
 import { applyApiErrors } from "@/lib/form-utils";
 import type { ApiErrorResponse } from "@/types/auth";
 
@@ -26,6 +27,7 @@ export default function Register() {
         navigate("/account");
       },
       onError: (error) => {
+        if (wasApiConnectionNotified(error)) return;
         const err = error as AxiosError<ApiErrorResponse<FormValues>>;
         if (applyApiErrors(err.response?.data?.errors, setError)) return;
         toast.error(err.response?.data?.message ?? "Đăng ký thất bại.");
