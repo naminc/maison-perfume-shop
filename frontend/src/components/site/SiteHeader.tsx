@@ -57,7 +57,7 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
     <>
       {/* Top bar */}
       <div className="bg-stone-900 text-stone-200 text-xs">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
+        <div className="mx-auto flex min-h-9 max-w-7xl items-center justify-between px-4 py-2.5">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> 0987 654 321</span>
             <span className="hidden sm:flex items-center gap-1.5"><Mail className="h-3 w-3" /> hello@maison.vn</span>

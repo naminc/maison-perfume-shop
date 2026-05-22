@@ -41,7 +41,7 @@ export default function AuthLayout({ title, subtitle, children, footer }: AuthLa
         <div className="relative z-10 p-9">
           <Link to="/" className="inline-flex items-center gap-3 group">
             <span className="grid h-9 w-9 place-items-center rounded-full border border-white/25 bg-white/10 backdrop-blur transition group-hover:bg-white/20">
-              <Sparkles className="h-4 w-4 text-white" />
+              <span className="text-white">M</span>
             </span>
             <span className="text-lg font-semibold tracking-[0.18em] text-white uppercase">Maison</span>
           </Link>
