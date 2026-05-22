@@ -38,8 +38,7 @@ export default function AccountLayout({ title, subtitle, children }: Props) {
   }
 
   const handleLogout = async () => {
-    toast.success("Đã đăng xuất thành công.");
-    await logout();
+    await logout().then(() => toast.success("Đăng xuất thành công, hẹn gặp lại!"));
   };
 
   const initials = user ? getInitials(user.full_name) : '';
