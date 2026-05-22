@@ -36,3 +36,8 @@ export interface RegisterPayload {
 export interface AuthResponse extends TokenPair {
   user: AuthUser;
 }
+
+export interface ApiErrorResponse<T = unknown> {
+  message?: string;
+  errors?: Partial<Record<keyof T, string[]>>;
+}

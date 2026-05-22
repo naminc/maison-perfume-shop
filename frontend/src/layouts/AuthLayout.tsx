@@ -1,7 +1,5 @@
 import { Link, Navigate, useSearchParams } from "react-router-dom";
-import { ShieldCheck, Sparkles, Truck } from "lucide-react";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import { ArrowLeft, ShieldCheck, Sparkles, Star, Truck } from "lucide-react";
 import perfumeCollection from "@/assets/perfume-collection.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -12,17 +10,15 @@ interface AuthLayoutProps {
   footer?: React.ReactNode;
 }
 
-const highlights = [
+const HIGHLIGHTS = [
   { icon: ShieldCheck, label: "Chính hãng 100%" },
-  { icon: Truck, label: "Giao nhanh toàn quốc" },
-  { icon: Sparkles, label: "Tư vấn theo gu" },
+  { icon: Truck,       label: "Giao nhanh toàn quốc" },
+  { icon: Sparkles,    label: "Tư vấn theo gu" },
 ];
 
 export default function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
   const [params] = useSearchParams();
-
-  if (isLoading) return null;
 
   if (user) {
     const redirect = params.get("redirect");
@@ -30,64 +26,113 @@ export default function AuthLayout({ title, subtitle, children, footer }: AuthLa
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f1e8] text-stone-900">
-      <SiteHeader />
+    <div className="flex min-h-screen">
 
-      <div className="border-b border-stone-200 bg-white/90">
-        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
-          <nav className="text-xs text-stone-500">
-            <Link to="/" className="hover:text-stone-900">Trang chủ</Link>
-            <span className="mx-2">/</span>
-            <span className="text-stone-900">{title}</span>
-          </nav>
+      {/* ── Left: image panel ─────────────────────────────── */}
+      <aside className="relative hidden w-[46%] flex-shrink-0 lg:flex lg:flex-col">
+        <img
+          src={perfumeCollection}
+          alt="Maison Perfume"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-stone-950/70 via-stone-900/50 to-stone-950/80" />
+
+        {/* Logo */}
+        <div className="relative z-10 p-9">
+          <Link to="/" className="inline-flex items-center gap-3 group">
+            <span className="grid h-9 w-9 place-items-center rounded-full border border-white/25 bg-white/10 backdrop-blur transition group-hover:bg-white/20">
+              <Sparkles className="h-4 w-4 text-white" />
+            </span>
+            <span className="text-lg font-semibold tracking-[0.18em] text-white uppercase">Maison</span>
+          </Link>
         </div>
+
+        {/* Center quote */}
+        <div className="relative z-10 flex flex-1 items-center justify-center px-12">
+          <div className="text-center">
+            <div className="mb-4 flex justify-center gap-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+            <blockquote className="text-[1.6rem] font-light italic leading-relaxed tracking-wide text-white/90">
+              "Mùi hương là ký ức<br />không thể xóa nhòa."
+            </blockquote>
+            <p className="mt-5 text-xs tracking-[0.25em] text-white/40 uppercase">Maison Perfume · Est. 2020</p>
+          </div>
+        </div>
+
+        {/* Bottom badges */}
+        <div className="relative z-10 flex flex-wrap gap-2 p-9">
+          {HIGHLIGHTS.map(({ icon: Icon, label }) => (
+            <span
+              key={label}
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur"
+            >
+              <Icon className="h-3 w-3" />
+              {label}
+            </span>
+          ))}
+        </div>
+      </aside>
+
+      {/* ── Right: form panel ─────────────────────────────── */}
+      <div className="flex flex-1 flex-col bg-[#faf8f5]">
+
+        {/* Top bar */}
+        <header className="flex items-center justify-between px-6 py-5 sm:px-10">
+          {/* Mobile logo */}
+          <Link to="/" className="flex items-center gap-2.5 lg:hidden">
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-stone-900">
+              <Sparkles className="h-3.5 w-3.5 text-white" />
+            </span>
+            <span className="text-base font-semibold tracking-[0.15em] text-stone-900 uppercase">Maison</span>
+          </Link>
+          <div className="hidden lg:block" />
+
+          <Link
+            to="/"
+            className="group flex items-center gap-1.5 text-sm text-stone-400 transition-colors hover:text-stone-900"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+            Về trang chủ
+          </Link>
+        </header>
+
+        {/* Form center */}
+        <main className="flex flex-1 items-center justify-center px-6 py-6">
+          <div className="w-full max-w-[460px]">
+
+            {/* Heading */}
+            <div className="mb-8">
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold tracking-wide text-amber-700 uppercase">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                Thành viên Maison
+              </span>
+              <h1 className="text-[1.85rem] font-semibold tracking-tight text-stone-950">{title}</h1>
+              {subtitle && (
+                <p className="mt-2 text-sm leading-relaxed text-stone-500">{subtitle}</p>
+              )}
+            </div>
+
+            {children}
+
+            {footer && (
+              <div className="mt-7">
+                <div className="relative mb-5 flex items-center">
+                  <div className="flex-1 border-t border-stone-200" />
+                </div>
+                <p className="text-center text-sm text-stone-500">{footer}</p>
+              </div>
+            )}
+          </div>
+        </main>
+
+        {/* Bottom */}
+        <footer className="px-6 py-4 text-center">
+          <p className="text-xs text-stone-400">© 2026 Maison. All rights reserved.</p>
+        </footer>
       </div>
-
-      <main className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_480px] lg:items-center lg:py-14">
-        <section className="relative hidden min-h-[620px] overflow-hidden rounded-lg lg:block">
-          <img
-            src={perfumeCollection}
-            alt="Bộ sưu tập nước hoa Maison"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/25 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5" />
-              Maison Perfume
-            </div>
-            <h2 className="mt-4 max-w-md text-3xl font-semibold leading-tight tracking-tight">
-              Không gian thành viên dành cho người yêu mùi hương.
-            </h2>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {highlights.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <span key={item.label} className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-2 text-xs font-medium backdrop-blur">
-                    <Icon className="h-3.5 w-3.5" />
-                    {item.label}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto w-full max-w-md rounded-lg border border-stone-200 bg-white p-6 shadow-sm sm:p-8 lg:mx-0 lg:max-w-none">
-          <div className="mb-7">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800 lg:hidden">
-              <Sparkles className="h-3.5 w-3.5" />
-              Maison Perfume
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-stone-950 sm:text-3xl">{title}</h1>
-            {subtitle && <p className="mt-2 text-sm leading-6 text-stone-500">{subtitle}</p>}
-          </div>
-          {children}
-          {footer && <div className="mt-6 border-t border-stone-100 pt-5 text-center text-sm text-stone-500">{footer}</div>}
-        </section>
-      </main>
-
-      <SiteFooter />
     </div>
   );
 }

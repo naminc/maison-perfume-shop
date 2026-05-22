@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, ShoppingBag, User, Heart, Phone, Mail, Menu, X, ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import { useStorefront } from "@/hooks/useStorefront";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -40,6 +41,11 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
     setTimeout(() => setMobileOpen(false), 300);
   };
 
+  const handleLogout = () => {
+    logout().then(() => toast.success("Đăng xuất thành công, hẹn gặp lại!"));
+    closeMenu();
+  };
+
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -61,7 +67,7 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
               <>
                 <Link to="/account" className="hover:text-white">Tài khoản</Link>
                 <span className="opacity-50">|</span>
-                <button onClick={logout} className="hover:text-white">Đăng xuất</button>
+                <button onClick={handleLogout} className="hover:text-white">Đăng xuất</button>
               </>
             ) : (
               <>
@@ -226,7 +232,7 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
                   <Link to="/account" onClick={closeMenu} className="w-full rounded-md bg-stone-900 py-2.5 text-center text-sm font-semibold text-white">
                     Tài khoản
                   </Link>
-                  <button onClick={() => { logout(); closeMenu(); }} className="w-full rounded-md border border-stone-300 py-2.5 text-center text-sm font-semibold text-red-600 hover:bg-red-50">
+                  <button onClick={handleLogout} className="w-full rounded-md border border-stone-300 py-2.5 text-center text-sm font-semibold text-red-600 hover:bg-red-50">
                     Đăng xuất
                   </button>
                 </>

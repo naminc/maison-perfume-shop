@@ -1,38 +1,30 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Camera } from "lucide-react";
+import { updateProfileSchema, type UpdateProfileFormValues } from "@/schemas/auth";
 import { toast } from "sonner";
 import type { AxiosError } from "axios";
 import AccountLayout from "@/layouts/AccountLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/AuthContext";
-import { useUpdateProfile } from "@/hooks/useAccount";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useProfile, useUpdateProfile } from "@/hooks/useAccount";
+import { applyApiErrors } from "@/lib/form-utils";
+import { getInitials } from "@/lib/utils";
+import type { ApiErrorResponse } from "@/types/auth";
 
-const schema = z.object({
-  full_name: z.string().trim().min(2, "Tên quá ngắn").max(100),
-  email:     z.string().trim().email("Email không hợp lệ").max(255),
-  phone:     z.string().trim().max(15).nullable().optional(),
-});
-type FormValues = z.infer<typeof schema>;
-
-interface ProfileErrorResponse {
-  message?: string;
-  errors?: Partial<Record<keyof FormValues, string[]>>;
-}
+type FormValues = UpdateProfileFormValues;
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { data: user, isLoading } = useProfile();
   const updateProfile = useUpdateProfile();
 
   const { register, handleSubmit, reset, setError, formState: { errors, isDirty } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(updateProfileSchema),
   });
 
-  // Pre-fill form khi user load xong
   useEffect(() => {
     if (user) {
       reset({
@@ -49,29 +41,21 @@ export default function Profile() {
       {
         onSuccess: () => toast.success('Đã cập nhật thông tin tài khoản.'),
         onError: (error) => {
-          const err = error as AxiosError<ProfileErrorResponse>;
-          const apiErrors = err.response?.data?.errors;
-          if (apiErrors) {
-            Object.entries(apiErrors).forEach(([field, messages]) => {
-              setError(field as keyof FormValues, { message: (messages as string[])[0] });
-            });
-            return;
-          }
+          const err = error as AxiosError<ApiErrorResponse<FormValues>>;
+          if (applyApiErrors(err.response?.data?.errors, setError)) return;
           toast.error(err.response?.data?.message ?? 'Cập nhật thất bại.');
         },
       }
     );
   };
 
-  const initials = user?.full_name
-    .split(' ')
-    .filter(Boolean)
-    .slice(-2)
-    .map((w) => w[0].toUpperCase())
-    .join('') ?? '';
+  const initials = user ? getInitials(user.full_name) : '';
 
   return (
     <AccountLayout title="Thông tin tài khoản" subtitle="Cập nhật thông tin cá nhân của bạn.">
+      {isLoading ? (
+        <ProfileSkeleton />
+      ) : (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Avatar */}
         <section className="rounded-xl border border-stone-200 bg-white p-6">
@@ -114,7 +98,44 @@ export default function Profile() {
           </Button>
         </div>
       </form>
+      )}
     </AccountLayout>
+  );
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Avatar skeleton */}
+      <section className="rounded-xl border border-stone-200 bg-white p-6">
+        <div className="flex items-center gap-5">
+          <Skeleton className="h-20 w-20 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+      </section>
+
+      {/* Fields skeleton */}
+      <section className="rounded-xl border border-stone-200 bg-white p-6">
+        <Skeleton className="mb-5 h-5 w-40" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="space-y-1.5">
+              <Skeleton className="h-3.5 w-24" />
+              <Skeleton className="h-11 w-full rounded-lg" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Button skeleton */}
+      <div className="flex justify-end gap-3">
+        <Skeleton className="h-11 w-20 rounded-lg" />
+        <Skeleton className="h-11 w-32 rounded-lg" />
+      </div>
+    </div>
   );
 }
 

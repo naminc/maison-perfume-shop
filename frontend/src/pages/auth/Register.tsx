@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
 import { LockKeyhole, Mail, User } from "lucide-react";
 import type { AxiosError } from "axios";
@@ -9,26 +8,15 @@ import { AuthFormField } from "@/components/auth/AuthFormField";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import AuthLayout from "@/layouts/AuthLayout";
 import { useRegister } from "@/hooks/useAuthMutations";
+import { registerSchema, type RegisterFormValues } from "@/schemas/auth";
+import { applyApiErrors } from "@/lib/form-utils";
+import type { ApiErrorResponse } from "@/types/auth";
 
-const schema = z.object({
-  full_name: z.string().trim().min(2, "Tên quá ngắn").max(100),
-  email: z.string().trim().email("Email không hợp lệ").max(255),
-  password: z.string().min(6, "Tối thiểu 6 ký tự").max(100),
-  password_confirmation: z.string(),
-}).refine((d) => d.password === d.password_confirmation, {
-  message: "Mật khẩu không khớp",
-  path: ["password_confirmation"],
-});
-type FormValues = z.infer<typeof schema>;
-
-interface AuthErrorResponse {
-  message?: string;
-  errors?: Partial<Record<keyof FormValues, string[]>>;
-}
+type FormValues = RegisterFormValues;
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors }, setError } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors }, setError } = useForm<FormValues>({ resolver: zodResolver(registerSchema) });
   const registerMutation = useRegister();
 
   const onSubmit = (data: FormValues) => {
@@ -38,16 +26,8 @@ export default function Register() {
         navigate("/account");
       },
       onError: (error) => {
-        const err = error as AxiosError<AuthErrorResponse>;
-        const apiErrors = err.response?.data?.errors;
-        if (apiErrors) {
-          Object.entries(apiErrors).forEach(([field, messages]) => {
-            setError(field as keyof FormValues, {
-              message: (messages as string[])[0],
-            });
-          });
-          return;
-        }
+        const err = error as AxiosError<ApiErrorResponse<FormValues>>;
+        if (applyApiErrors(err.response?.data?.errors, setError)) return;
         toast.error(err.response?.data?.message ?? "Đăng ký thất bại.");
       },
     });
@@ -57,7 +37,7 @@ export default function Register() {
     <AuthLayout
       title="Tạo tài khoản"
       subtitle="Gia nhập Maison để nhận ưu đãi riêng dành cho thành viên"
-      footer={<>Đã có tài khoản?{" "}<Link to="/auth/login" className="font-medium text-amber-700 hover:underline">Đăng nhập</Link></>}
+      footer={<>Đã có tài khoản?{" "}<Link to="/auth/login" className="font-semibold text-amber-700 underline-offset-2 hover:underline">Đăng nhập</Link></>}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <AuthFormField

@@ -1,7 +1,6 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
 import { LockKeyhole, Mail } from "lucide-react";
 import type { AxiosError } from "axios";
@@ -10,21 +9,15 @@ import { AuthFormField } from "@/components/auth/AuthFormField";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import AuthLayout from "@/layouts/AuthLayout";
 import { useLogin } from "@/hooks/useAuthMutations";
+import { loginSchema, type LoginFormValues } from "@/schemas/auth";
+import type { ApiErrorResponse } from "@/types/auth";
 
-const schema = z.object({
-  email: z.string().trim().email("Email không hợp lệ").max(255),
-  password: z.string().min(6, "Tối thiểu 6 ký tự").max(100),
-});
-type FormValues = z.infer<typeof schema>;
-
-interface AuthErrorResponse {
-  message?: string;
-}
+type FormValues = LoginFormValues;
 
 export default function Login() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(loginSchema) });
   const login = useLogin();
 
   const onSubmit = async (data: FormValues) => {
@@ -35,9 +28,8 @@ export default function Login() {
         navigate(redirect?.startsWith("/admin") ? redirect : "/account");
       },
       onError: (error) => {
-        const err = error as AxiosError<AuthErrorResponse>;
-        const msg = err.response?.data?.message ?? "Đăng nhập thất bại.";
-        toast.error(msg);
+        const err = error as AxiosError<ApiErrorResponse>;
+        toast.error(err.response?.data?.message ?? "Đăng nhập thất bại.");
       },
     });
   };
@@ -46,7 +38,7 @@ export default function Login() {
     <AuthLayout
       title="Đăng nhập"
       subtitle="Chào mừng bạn quay lại Maison"
-      footer={<>Chưa có tài khoản?{" "}<Link to="/auth/register" className="font-medium text-amber-700 hover:underline">Đăng ký ngay</Link></>}
+      footer={<>Chưa có tài khoản?{" "}<Link to="/auth/register" className="font-semibold text-amber-700 underline-offset-2 hover:underline">Đăng ký ngay</Link></>}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <AuthFormField
