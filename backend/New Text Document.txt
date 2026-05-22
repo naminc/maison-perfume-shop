@@ -1,0 +1,89 @@
+Nếu làm đúng production cho web bán nước hoa này, nên tách DB thành 2 phần: **storefront bán hàng** và **admin/kho**. Quan trọng nhất là đừng để `perfume-catalog` và `seed-items` là 2 nguồn dữ liệu riêng như demo hiện tại. Nên gom về một model sản phẩm chung.
+
+**Bảng bắt buộc cho storefront**
+1. `users`
+   Lưu tài khoản khách/admin: `id`, `email`, `password_hash`, `name`, `phone`, `role`, `status`, `created_at`.
+
+2. `user_addresses`
+   Địa chỉ giao hàng: `id`, `user_id`, `full_name`, `phone`, `city`, `district`, `address_line`, `is_default`.
+
+3. `brands`
+   Thương hiệu: Dior, Chanel, Tom Ford...
+   `id`, `name`, `slug`, `description`, `logo_url`.
+
+4. `categories`
+   Nam, Nữ, Unisex, EDP, EDT...
+   `id`, `name`, `slug`, `description`, `parent_id`.
+
+5. `fragrance_families`
+   Floral, Woody, Oriental, Fresh...
+   `id`, `name`, `slug`.
+
+6. `products`
+   Sản phẩm chính: `id`, `brand_id`, `category_id`, `family_id`, `slug`, `name`, `gender`, `short_description`, `description`, `is_active`, `is_hot`, `is_new`.
+
+7. `product_variants`
+   Biến thể/dung tích/SKU: `id`, `product_id`, `sku`, `volume`, `price`, `old_price`, `stock_quantity`, `barcode`, `status`.
+   Ví dụ Dior Sauvage có 10ml, 50ml, 100ml.
+
+8. `product_images`
+   Ảnh sản phẩm: `id`, `product_id`, `variant_id`, `url`, `alt`, `sort_order`, `is_primary`.
+
+9. `fragrance_notes`
+   Note hương: Bergamot, Cedar, Vanilla...
+   `id`, `name`.
+
+10. `product_notes`
+   Mapping note theo tầng hương: `id`, `product_id`, `note_id`, `note_type`
+   `note_type`: `top`, `middle`, `base`.
+
+11. `carts`
+   Giỏ hàng: `id`, `user_id nullable`, `session_id`, `coupon_id`, `created_at`.
+
+12. `cart_items`
+   Sản phẩm trong giỏ: `id`, `cart_id`, `variant_id`, `quantity`.
+
+13. `wishlists`
+   Sản phẩm yêu thích: `id`, `user_id`, `variant_id` hoặc `product_id`.
+
+14. `orders`
+   Đơn hàng: `id`, `order_number`, `user_id`, `status`, `subtotal`, `discount_total`, `shipping_fee`, `total`, `payment_status`, `shipping_status`, `created_at`.
+
+15. `order_items`
+   Chi tiết đơn: `id`, `order_id`, `variant_id`, `product_name`, `sku`, `volume`, `unit_price`, `quantity`, `line_total`.
+
+16. `payments`
+   Thanh toán: `id`, `order_id`, `method`, `provider`, `amount`, `status`, `transaction_id`.
+
+17. `shipments`
+   Giao hàng: `id`, `order_id`, `carrier`, `tracking_code`, `shipping_method`, `status`, `shipped_at`, `delivered_at`.
+
+18. `coupons`
+   Mã giảm giá: `id`, `code`, `type`, `value`, `min_order_value`, `usage_limit`, `starts_at`, `ends_at`, `is_active`.
+
+19. `coupon_redemptions`
+   Lịch sử dùng mã: `id`, `coupon_id`, `user_id`, `order_id`, `used_at`.
+
+20. `reviews`
+   Đánh giá sản phẩm: `id`, `user_id`, `product_id`, `order_item_id`, `rating`, `comment`, `is_verified`, `status`.
+
+**Bảng nên có thêm cho admin/kho**
+1. `suppliers`
+2. `locations`
+3. `stock_movements`
+4. `purchase_orders`
+5. `purchase_order_items`
+6. `inventory_requests`
+7. `inventory_request_items`
+8. `notifications`
+9. `custom_field_definitions`
+10. `settings` hoặc `reorder_settings`
+
+**Bảng nội dung phụ**
+- `blog_posts`
+- `content_pages`
+- `contact_messages`
+- `newsletter_subscriptions`
+
+**Khuyến nghị quan trọng**
+Nên dùng `product_variants` làm trung tâm kho và bán hàng. Storefront bán `variant_id`; admin nhập kho, xuất kho, purchase order cũng theo `variant_id`. Như vậy không bị lệch giữa “sản phẩm bán” và “item kho”.
