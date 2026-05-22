@@ -5,7 +5,7 @@ Nếu làm đúng production cho web bán nước hoa này, nên tách DB thành
    Lưu tài khoản khách/admin: `id`, `email`, `password`, `full_name`, `phone`, `role`, `status`, `created_at`, `updated_at`.
 
 2. `user_addresses`
-   Địa chỉ giao hàng: `id`, `user_id`, `full_name`, `phone`, `city`, `district`, `address_line`, `is_default`.
+   Địa chỉ giao hàng: `id`, `user_id`, `full_name`, `phone`, `city`, `district`, `address_line`, `is_default`, `created_at`, `updated_at`.
 
 3. `brands`
    Thương hiệu: Dior, Chanel, Tom Ford...

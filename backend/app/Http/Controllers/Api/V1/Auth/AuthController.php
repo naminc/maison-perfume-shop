@@ -100,6 +100,6 @@ class AuthController extends BaseController
 
     public function me(Request $request)
     {
-        return api_success($request->user());
+        return api_success(data: $request->user(), message: 'Lấy thông tin người dùng thành công.');
     }
 }
