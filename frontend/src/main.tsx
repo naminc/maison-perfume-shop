@@ -6,8 +6,6 @@ import { queryClient, prefetchCriticalData } from "@/lib/query-client";
 import App from "./App";
 import "./styles.css";
 
-prefetchCriticalData();
-
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -17,3 +15,5 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </React.StrictMode>
 );
+
+window.setTimeout(prefetchCriticalData, 0);
