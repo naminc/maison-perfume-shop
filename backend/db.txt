@@ -2,7 +2,7 @@ Nếu làm đúng production cho web bán nước hoa này, nên tách DB thành
 
 **Bảng bắt buộc cho storefront**
 1. `users`
-   Lưu tài khoản khách/admin: `id`, `email`, `password_hash`, `name`, `phone`, `role`, `status`, `created_at`.
+   Lưu tài khoản khách/admin: `id`, `email`, `password`, `full_name`, `phone`, `role`, `status`, `created_at`, `updated_at`.
 
 2. `user_addresses`
    Địa chỉ giao hàng: `id`, `user_id`, `full_name`, `phone`, `city`, `district`, `address_line`, `is_default`.
