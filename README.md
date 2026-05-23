@@ -103,6 +103,8 @@ After each deployment:
 cd /path/to/backend
 php artisan optimize:clear
 php artisan optimize
+chown -R www:www storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
 sudo supervisorctl restart maison-queue:*
 ```
 
