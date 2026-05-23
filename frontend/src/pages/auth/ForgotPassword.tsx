@@ -2,44 +2,66 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Mail, RefreshCcw } from "lucide-react";
+import { toast } from "sonner";
+import type { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { AuthFormField } from "@/components/auth/AuthFormField";
+import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import AuthLayout from "@/layouts/AuthLayout";
+import { useForgotPassword } from "@/hooks/useAuthMutations";
+import { forgotPasswordSchema, type ForgotPasswordFormValues } from "@/schemas/auth";
+import { wasApiConnectionNotified } from "@/lib/api";
+import { applyApiErrors } from "@/lib/form-utils";
+import type { ApiErrorResponse } from "@/types/auth";
 
-const schema = z.object({
-  email: z.string().trim().email("Email không hợp lệ").max(255),
-});
-type FormValues = z.infer<typeof schema>;
+type FormValues = ForgotPasswordFormValues;
 
 export default function ForgotPassword() {
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-  const { register, handleSubmit, formState: { errors }, getValues } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const [sentEmail, setSentEmail] = useState<string | null>(null);
+  const forgotPassword = useForgotPassword();
+  const { register, handleSubmit, setError, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+  });
 
-  const onSubmit = async (_data: FormValues) => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setLoading(false);
-    setSent(true);
+  const onSubmit = (data: FormValues) => {
+    forgotPassword.mutate(data, {
+      onSuccess: () => {
+        setSentEmail(data.email);
+        toast.success("Nếu email tồn tại, liên kết đặt lại mật khẩu đã được gửi.");
+      },
+      onError: (error) => {
+        if (wasApiConnectionNotified(error)) return;
+        const err = error as AxiosError<ApiErrorResponse<FormValues>>;
+        if (applyApiErrors(err.response?.data?.errors, setError)) return;
+        toast.error(err.response?.data?.message ?? "Không thể gửi email đặt lại mật khẩu.");
+      },
+    });
   };
 
-  if (sent) {
+  if (sentEmail) {
     return (
       <AuthLayout
         title="Kiểm tra email của bạn"
-        subtitle={`Chúng tôi đã gửi liên kết đặt lại mật khẩu đến ${getValues("email")}.`}
-        footer={<Link to="/auth/login" className="font-medium text-amber-700 hover:underline">← Quay lại đăng nhập</Link>}
+        subtitle={`Nếu ${sentEmail} tồn tại trong hệ thống, chúng tôi đã gửi liên kết đặt lại mật khẩu.`}
+        footer={<Link to="/auth/login" className="font-medium text-amber-700 hover:underline">Quay lại đăng nhập</Link>}
       >
-        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-stone-700">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-700" />
-          <p>Vui lòng kiểm tra hộp thư đến và thư mục spam. Liên kết sẽ hết hạn sau 30 phút.</p>
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-stone-700">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-700" />
+            <p>
+              Vui lòng kiểm tra hộp thư đến và thư mục spam. Liên kết sẽ hết hạn sau 15 phút.
+            </p>
+          </div>
+          <Button
+            type="button"
+            className="h-11 w-full rounded-xl border border-stone-900 bg-stone-900 text-sm font-semibold text-white shadow-sm transition-all hover:bg-stone-800 hover:shadow-md active:scale-[0.99]"
+            onClick={() => setSentEmail(null)}
+          >
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Gửi lại email
+          </Button>
         </div>
-        <Button variant="outline" className="h-11 w-full rounded-lg border-stone-300" onClick={() => setSent(false)}>
-          Gửi lại email
-        </Button>
       </AuthLayout>
     );
   }
@@ -51,15 +73,20 @@ export default function ForgotPassword() {
       footer={<>Nhớ mật khẩu rồi?{" "}<Link to="/auth/login" className="font-medium text-amber-700 hover:underline">Đăng nhập</Link></>}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-stone-700">Email</Label>
-          <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" className="h-11 rounded-lg border-input bg-white" {...register("email")} />
-          {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
-        </div>
+        <AuthFormField
+          id="email"
+          label="Email"
+          type="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          icon={Mail}
+          registration={register("email")}
+          error={errors.email?.message}
+        />
 
-        <Button type="submit" className="h-11 w-full rounded-lg bg-stone-900 text-white hover:bg-stone-800" disabled={loading}>
-          {loading ? "Đang gửi…" : "Gửi liên kết đặt lại"}
-        </Button>
+        <AuthSubmitButton isPending={forgotPassword.isPending} pendingText="Đang gửi...">
+          Gửi liên kết đặt lại
+        </AuthSubmitButton>
       </form>
     </AuthLayout>
   );

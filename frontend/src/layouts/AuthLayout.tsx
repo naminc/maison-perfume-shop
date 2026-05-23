@@ -1,7 +1,6 @@
-import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ArrowLeft, ShieldCheck, Sparkles, Star, Truck } from "lucide-react";
 import perfumeCollection from "@/assets/perfume-collection.jpg";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface AuthLayoutProps {
   title: string;
@@ -13,18 +12,10 @@ interface AuthLayoutProps {
 const HIGHLIGHTS = [
   { icon: ShieldCheck, label: "Chính hãng 100%" },
   { icon: Truck,       label: "Giao nhanh toàn quốc" },
-  { icon: Sparkles,    label: "Tư vấn theo gu" },
+  { icon: Sparkles,    label: "Tư vấn theo sở thích" },
 ];
 
 export default function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
-  const { user } = useAuth();
-  const [params] = useSearchParams();
-
-  if (user) {
-    const redirect = params.get("redirect");
-    return <Navigate to={redirect ?? "/account"} replace />;
-  }
-
   return (
     <div className="flex min-h-screen">
 
@@ -58,7 +49,7 @@ export default function AuthLayout({ title, subtitle, children, footer }: AuthLa
             <blockquote className="text-[1.6rem] font-light italic leading-relaxed tracking-wide text-white/90">
               "Mùi hương là ký ức<br />không thể xóa nhòa."
             </blockquote>
-            <p className="mt-5 text-xs tracking-[0.25em] text-white/40 uppercase">Maison Perfume · Est. 2020</p>
+            <p className="mt-5 text-xs tracking-[0.25em] text-white/40 uppercase">Maison Perfume · Est. 2026</p>
           </div>
         </div>
 

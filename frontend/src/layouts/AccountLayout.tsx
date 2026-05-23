@@ -1,20 +1,20 @@
-import { Link, NavLink, Navigate, useLocation } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { User, Package, MapPin, Heart, LogOut, Settings, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { tokenStorage } from "@/lib/token";
 import { getInitials } from "@/lib/utils";
 
 const NAV = [
   { to: "/account",           label: "Tổng quan",           icon: User,        end: true },
   { to: "/account/profile",   label: "Thông tin tài khoản", icon: Settings },
+  { to: "/account/security",  label: "Bảo mật",              icon: ShieldCheck },
   { to: "/account/orders",    label: "Đơn hàng của tôi",    icon: Package },
   { to: "/account/addresses", label: "Địa chỉ giao hàng",   icon: MapPin },
   { to: "/account/wishlist",  label: "Sản phẩm yêu thích",  icon: Heart },
-  { to: "/account/security",  label: "Bảo mật",              icon: ShieldCheck },
+  
 ];
 
 interface Props {
@@ -25,17 +25,6 @@ interface Props {
 
 export default function AccountLayout({ title, subtitle, children }: Props) {
   const { user, isLoading, logout } = useAuth();
-  const location = useLocation();
-
-  // Không có token → redirect ngay, không chờ query
-  if (!tokenStorage.getAccess()) {
-    return <Navigate to={`/auth/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
-  }
-
-  // Query đã xong nhưng không có user (token hết hạn, refresh thất bại) → redirect
-  if (!isLoading && !user) {
-    return <Navigate to={`/auth/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
-  }
 
   const handleLogout = async () => {
     await logout().then(() => toast.success("Đăng xuất thành công, hẹn gặp lại!"));

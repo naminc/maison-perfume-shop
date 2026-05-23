@@ -11,6 +11,7 @@ import AuthLayout from "@/layouts/AuthLayout";
 import { useLogin } from "@/hooks/useAuthMutations";
 import { loginSchema, type LoginFormValues } from "@/schemas/auth";
 import { wasApiConnectionNotified } from "@/lib/api";
+import { getSafeRedirectPath } from "@/routes/redirect";
 import type { ApiErrorResponse } from "@/types/auth";
 
 type FormValues = LoginFormValues;
@@ -25,8 +26,8 @@ export default function Login() {
     login.mutate(data, {
       onSuccess: (res) => {
         toast.success(`Chào mừng, ${res.user.full_name}!`);
-        const redirect = params.get("redirect");
-        navigate(redirect?.startsWith("/admin") ? redirect : "/account");
+        const redirect = getSafeRedirectPath(params.get("redirect"));
+        navigate(redirect ?? "/account");
       },
       onError: (error) => {
         if (wasApiConnectionNotified(error)) return;

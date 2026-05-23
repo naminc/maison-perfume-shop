@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { authApi } from '@/api/auth';
 import { tokenStorage } from '@/lib/token';
 import { useAuth } from '@/contexts/AuthContext';
-import type { LoginPayload, RegisterPayload } from '@/types/auth';
+import type { ForgotPasswordPayload, LoginPayload, RegisterPayload, ResetPasswordPayload } from '@/types/auth';
 
 export function useLogin() {
   const { setUser } = useAuth();
@@ -25,6 +25,18 @@ export function useRegister() {
       tokenStorage.setTokens(data.access_token, data.refresh_token);
       setUser(data.user);
     },
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (payload: ForgotPasswordPayload) => authApi.forgotPassword(payload),
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: (payload: ResetPasswordPayload) => authApi.resetPassword(payload),
   });
 }
 
