@@ -17,19 +17,36 @@ class LoginSessionService extends BaseService
         $device   = 'Desktop';
 
         // Platform
-        if (preg_match('/iPhone/i', $ua))        { $platform = 'iOS'; $device = 'iPhone'; }
-        elseif (preg_match('/iPad/i', $ua))       { $platform = 'iPadOS'; $device = 'iPad'; }
-        elseif (preg_match('/Android/i', $ua))    { $platform = 'Android'; $device = preg_match('/Mobile/i', $ua) ? 'Android Phone' : 'Android Tablet'; }
-        elseif (preg_match('/Macintosh/i', $ua))  { $platform = 'macOS'; $device = 'Mac'; }
-        elseif (preg_match('/Windows/i', $ua))    { $platform = 'Windows'; $device = 'Windows PC'; }
-        elseif (preg_match('/Linux/i', $ua))      { $platform = 'Linux'; $device = 'Linux PC'; }
+        if (preg_match('/iPhone/i', $ua)) {
+            $platform = 'iOS';
+            $device = 'iPhone';
+        } elseif (preg_match('/iPad/i', $ua)) {
+            $platform = 'iPadOS';
+            $device = 'iPad';
+        } elseif (preg_match('/Android/i', $ua)) {
+            $platform = 'Android';
+            $device = preg_match('/Mobile/i', $ua) ? 'Android Phone' : 'Android Tablet';
+        } elseif (preg_match('/Macintosh/i', $ua)) {
+            $platform = 'macOS';
+            $device = 'Mac';
+        } elseif (preg_match('/Windows/i', $ua)) {
+            $platform = 'Windows';
+            $device = 'Windows PC';
+        } elseif (preg_match('/Linux/i', $ua)) {
+            $platform = 'Linux';
+            $device = 'Linux PC';
+        }
 
-        // Browser
-        if (preg_match('/Edg\//i', $ua))           $browser = 'Edge';
-        elseif (preg_match('/OPR|Opera/i', $ua))   $browser = 'Opera';
-        elseif (preg_match('/Chrome/i', $ua))      $browser = 'Chrome';
-        elseif (preg_match('/Safari/i', $ua))      $browser = 'Safari';
-        elseif (preg_match('/Firefox/i', $ua))     $browser = 'Firefox';
+        // Browser — thứ tự quan trọng: các token đặc thù phải check trước
+        if (preg_match('/Edg\//i', $ua))            $browser = 'Edge';
+        elseif (preg_match('/EdgA\//i', $ua))       $browser = 'Edge';          // Edge trên Android
+        elseif (preg_match('/OPR|Opera/i', $ua))    $browser = 'Opera';
+        elseif (preg_match('/OPiOS/i', $ua))        $browser = 'Opera';         // Opera iOS
+        elseif (preg_match('/CriOS/i', $ua))        $browser = 'Chrome';        // Chrome iOS
+        elseif (preg_match('/FxiOS/i', $ua))        $browser = 'Firefox';       // Firefox iOS
+        elseif (preg_match('/Chrome/i', $ua))       $browser = 'Chrome';
+        elseif (preg_match('/Firefox/i', $ua))      $browser = 'Firefox';
+        elseif (preg_match('/Safari/i', $ua))       $browser = 'Safari';
 
         return compact('device', 'platform', 'browser');
     }

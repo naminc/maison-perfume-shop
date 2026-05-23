@@ -12,7 +12,11 @@ class TrustProxies extends Middleware
      *
      * @var array<int, string>|string|null
      */
-    protected $proxies;
+    /**
+     * Trust all proxies — phù hợp khi đứng sau nginx, Cloudflare, hoặc bất kỳ reverse proxy nào.
+     * Nếu muốn hạn chế hơn, thay '*' bằng IP cụ thể của proxy: ['10.0.0.1'].
+     */
+    protected $proxies = '*';
 
     /**
      * The headers that should be used to detect proxies.
