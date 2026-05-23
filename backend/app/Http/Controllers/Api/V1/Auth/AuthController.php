@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Api\V1\BaseController;
+use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\RegisterRequest;
+use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
 use App\Services\Interfaces\AuthServiceInterface;
 use App\Services\RefreshTokenService;
 use Illuminate\Http\Request;
@@ -85,6 +87,40 @@ class AuthController extends BaseController
             'token_type'    => 'Bearer',
             'expires_in'    => $payload['expires_in'],
         ], 'Token refreshed.');
+    }
+
+    public function forgotPassword(ForgotPasswordRequest $request)
+    {
+        $result = $this->authService->forgotPassword($request->email);
+
+        if (! $result['ok']) {
+            return api_error('Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.', 500);
+        }
+
+        $payload = $result['data'];
+        if (! $payload['sent']) {
+            return api_error($payload['message'], $payload['status'] ?? 400);
+        }
+
+        return api_success(null, $payload['message']);
+    }
+
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        $result = $this->authService->resetPassword($request->validated());
+
+        if (! $result['ok']) {
+            return api_error('Không thể đặt lại mật khẩu. Vui lòng thử lại sau.', 500);
+        }
+
+        $payload = $result['data'];
+        if (! $payload['reset']) {
+            return api_error($payload['message'], $payload['status'] ?? 422, [
+                'token' => [$payload['message']],
+            ]);
+        }
+
+        return api_success(null, $payload['message']);
     }
 
     public function logout(Request $request)

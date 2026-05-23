@@ -4,9 +4,13 @@ namespace App\Services;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\User;
 use App\Repositories\Interfaces\UserRepositoryInterface;
 use App\Services\Interfaces\AuthServiceInterface;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 class AuthService extends BaseService implements AuthServiceInterface
 {
@@ -72,6 +76,67 @@ class AuthService extends BaseService implements AuthServiceInterface
                 'user'          => $user,
             ];
         }, 'login');
+    }
+
+    public function forgotPassword(string $email): array
+    {
+        return $this->executeSafe(function () use ($email) {
+            $status = Password::broker()->sendResetLink(['email' => $email]);
+
+            if ($status === Password::RESET_THROTTLED) {
+                return [
+                    'sent'    => false,
+                    'status'  => 429,
+                    'message' => 'Bạn vừa yêu cầu đặt lại mật khẩu. Vui lòng chờ một phút rồi thử lại.',
+                ];
+            }
+
+            if ($status !== Password::RESET_LINK_SENT && $status !== Password::INVALID_USER) {
+                return [
+                    'sent'    => false,
+                    'status'  => 500,
+                    'message' => 'Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.',
+                ];
+            }
+
+            return [
+                'sent'    => true,
+                'message' => 'Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu đã được gửi.',
+            ];
+        }, 'forgotPassword');
+    }
+
+    public function resetPassword(array $credentials): array
+    {
+        return $this->executeTransaction(function () use ($credentials) {
+            $status = Password::broker()->reset(
+                $credentials,
+                function (User $user, string $password) {
+                    $user->forceFill([
+                        'password' => Hash::make($password),
+                        'remember_token' => Str::random(60),
+                    ])->save();
+
+                    $user->tokens()->delete();
+                    $this->refreshTokenService->revokeAllForUser($user->id);
+
+                    event(new PasswordReset($user));
+                }
+            );
+
+            if ($status !== Password::PASSWORD_RESET) {
+                return [
+                    'reset'   => false,
+                    'status'  => 422,
+                    'message' => 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.',
+                ];
+            }
+
+            return [
+                'reset'   => true,
+                'message' => 'Đặt lại mật khẩu thành công.',
+            ];
+        }, 'resetPassword');
     }
 
     public function logout(int $userId): array

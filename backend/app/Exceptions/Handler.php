@@ -3,6 +3,9 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -23,6 +26,17 @@ class Handler extends ExceptionHandler
      */
     public function register(): void
     {
+        $this->renderable(function (ThrottleRequestsException $e, Request $request): ?JsonResponse {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null;
+            }
+
+            return api_error(
+                'Bạn thao tác quá nhanh. Vui lòng chờ một lát rồi thử lại.',
+                429
+            )->withHeaders($e->getHeaders());
+        });
+
         $this->reportable(function (Throwable $e) {
             //
         });
