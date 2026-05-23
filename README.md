@@ -50,28 +50,28 @@ npm run dev
 
 ### Queue Worker (required for email)
 
-Forgot password và các email khác được gửi qua queue. Cần chạy worker:
+Emails (forgot password, etc.) are dispatched via queue. A worker must be running to process them:
 
 ```bash
-# Local development — mở terminal riêng
+# Local development — open a separate terminal
 cd backend
 php artisan queue:work
 ```
 
-`.env` cần có:
+Make sure `.env` has:
 ```
 QUEUE_CONNECTION=database
 ```
 
 ### Production (Supervisor)
 
-Trên production, dùng Supervisor để queue worker chạy vĩnh viễn:
+On production, use Supervisor to keep the queue worker running permanently:
 
 ```bash
 sudo apt install supervisor -y
 ```
 
-Tạo file `/etc/supervisor/conf.d/maison-queue.conf`:
+Create `/etc/supervisor/conf.d/maison-queue.conf`:
 
 ```ini
 [program:maison-queue]
@@ -88,26 +88,28 @@ stdout_logfile=/path/to/backend/storage/logs/queue.log
 stopwaitsecs=3600
 ```
 
-Khởi động:
+Start the worker:
 
 ```bash
 sudo supervisorctl reread
 sudo supervisorctl update
 sudo supervisorctl start maison-queue:*
-sudo supervisorctl status          # Kiểm tra RUNNING
+sudo supervisorctl status          # Should show RUNNING
 ```
 
-Sau mỗi lần deploy code mới:
+After each deployment:
 
 ```bash
+cd /path/to/backend
+php artisan optimize:clear
+php artisan optimize
 sudo supervisorctl restart maison-queue:*
 ```
 
-### Xem log queue
+### Queue Logs
 
 ```bash
-# Local
-# Output hiện trực tiếp trên terminal queue:work
+# Local — output is shown directly in the queue:work terminal
 
 # Production
 cat /path/to/backend/storage/logs/queue.log
@@ -119,12 +121,12 @@ cat /path/to/backend/storage/logs/queue.log
 
 | Key | Description | Example |
 |-----|-------------|---------|
-| `APP_URL` | URL backend | `https://api.example.com` |
-| `FRONTEND_URL` | URL frontend (dùng cho reset password link) | `https://example.com` |
+| `APP_URL` | Backend URL | `https://api.example.com` |
+| `FRONTEND_URL` | Frontend URL (used for reset password links) | `https://example.com` |
 | `DB_*` | MySQL connection | |
-| `MAIL_*` | SMTP config | Gmail, Mailgun, Resend... |
-| `QUEUE_CONNECTION` | Queue driver (`sync` hoặc `database`) | `database` |
-| `SANCTUM_TOKEN_EXPIRATION` | Access token TTL (phút) | `15` |
+| `MAIL_*` | SMTP configuration | Gmail, Mailgun, Resend... |
+| `QUEUE_CONNECTION` | Queue driver (`sync` or `database`) | `database` |
+| `SANCTUM_TOKEN_EXPIRATION` | Access token TTL (minutes) | `15` |
 
 ### Frontend (.env)
 
