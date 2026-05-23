@@ -139,6 +139,24 @@ class AuthService extends BaseService implements AuthServiceInterface
         }, 'resetPassword');
     }
 
+    public function changePassword(int $userId, array $data): array
+    {
+        return $this->executeTransaction(function () use ($userId, $data) {
+            $user = $this->userRepository->findById($userId);
+
+            if (! $user || ! Hash::check($data['current_password'], $user->password)) {
+                return ['changed' => false, 'message' => 'Mật khẩu hiện tại không đúng.'];
+            }
+
+            $user->update(['password' => Hash::make($data['new_password'])]);
+
+            $user->tokens()->delete();
+            $this->refreshTokenService->revokeAllForUser($userId);
+
+            return ['changed' => true, 'message' => 'Đổi mật khẩu thành công.'];
+        }, 'changePassword');
+    }
+
     public function logout(int $userId): array
     {
         return $this->executeSafe(function () use ($userId) {

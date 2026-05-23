@@ -11,8 +11,8 @@ const NAV = [
   { to: "/account",           label: "Tổng quan",           icon: User,        end: true },
   { to: "/account/profile",   label: "Thông tin tài khoản", icon: Settings },
   { to: "/account/security",  label: "Bảo mật",              icon: ShieldCheck },
-  { to: "/account/orders",    label: "Đơn hàng của tôi",    icon: Package },
   { to: "/account/addresses", label: "Địa chỉ giao hàng",   icon: MapPin },
+  { to: "/account/orders",    label: "Đơn hàng của tôi",    icon: Package },
   { to: "/account/wishlist",  label: "Sản phẩm yêu thích",  icon: Heart },
   
 ];

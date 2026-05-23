@@ -45,6 +45,7 @@ export interface ResetPasswordPayload {
 }
 
 export interface AuthResponse extends TokenPair {
+  session_id?: number;
   user: AuthUser;
 }
 

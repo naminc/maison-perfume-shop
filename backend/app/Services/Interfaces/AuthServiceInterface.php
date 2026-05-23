@@ -8,5 +8,6 @@ interface AuthServiceInterface
     public function login(string $email, string $password): array;
     public function forgotPassword(string $email): array;
     public function resetPassword(array $credentials): array;
+    public function changePassword(int $userId, array $data): array;
     public function logout(int $userId): array;
 }

@@ -1,6 +1,7 @@
 const KEYS = {
-  ACCESS:  'maison_access_token',
-  REFRESH: 'maison_refresh_token',
+  ACCESS:     'maison_access_token',
+  REFRESH:    'maison_refresh_token',
+  SESSION_ID: 'maison_session_id',
   USER_CACHE: 'maison_user_cache',
 } as const;
 
@@ -9,6 +10,8 @@ export const tokenStorage = {
   getRefresh:     () => localStorage.getItem(KEYS.REFRESH),
   setAccess:      (t: string) => localStorage.setItem(KEYS.ACCESS, t),
   setRefresh:     (t: string) => localStorage.setItem(KEYS.REFRESH, t),
+  getSessionId:   () => localStorage.getItem(KEYS.SESSION_ID),
+  setSessionId:   (id: string | number) => localStorage.setItem(KEYS.SESSION_ID, String(id)),
   setTokens:      (access: string, refresh: string) => {
     localStorage.setItem(KEYS.ACCESS, access);
     localStorage.setItem(KEYS.REFRESH, refresh);
@@ -16,6 +19,7 @@ export const tokenStorage = {
   clearTokens:    () => {
     localStorage.removeItem(KEYS.ACCESS);
     localStorage.removeItem(KEYS.REFRESH);
+    localStorage.removeItem(KEYS.SESSION_ID);
     sessionStorage.removeItem(KEYS.USER_CACHE);
   },
 

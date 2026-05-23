@@ -17,12 +17,6 @@ export const registerSchema = z
     path: ["password_confirmation"],
   });
 
-export const updateProfileSchema = z.object({
-  full_name: z.string().trim().min(2, "Tên quá ngắn").max(100),
-  email: z.string().trim().email("Email không hợp lệ").max(255),
-  phone: z.string().trim().max(15).optional().nullable(),
-});
-
 export const forgotPasswordSchema = z.object({
   email: z.string().trim().email("Email không hợp lệ").max(255),
 });
@@ -41,6 +35,5 @@ export const resetPasswordSchema = z
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type RegisterFormValues = z.infer<typeof registerSchema>;
-export type UpdateProfileFormValues = z.infer<typeof updateProfileSchema>;
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;

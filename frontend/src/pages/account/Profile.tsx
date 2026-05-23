@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Camera } from "lucide-react";
-import { updateProfileSchema, type UpdateProfileFormValues } from "@/schemas/auth";
+import { ButtonSpinner } from "@/components/shared/ButtonSpinner";
+import { updateProfileSchema, type UpdateProfileFormValues } from "@/schemas/account";
 import { toast } from "sonner";
 import type { AxiosError } from "axios";
 import AccountLayout from "@/layouts/AccountLayout";
@@ -81,9 +82,9 @@ export default function Profile() {
         <section className="rounded-xl border border-stone-200 bg-white p-6">
           <h2 className="mb-5 text-lg font-semibold">Thông tin cá nhân</h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Họ và tên" error={errors.full_name?.message} {...register("full_name")} />
-            <Field label="Email" type="email" error={errors.email?.message} {...register("email")} />
-            <Field label="Số điện thoại" error={errors.phone?.message} {...register("phone")} />
+            <Field label="Họ và tên" placeholder="Nhập họ và tên" error={errors.full_name?.message} {...register("full_name")} />
+            <Field label="Email" type="email" placeholder="Nhập email" error={errors.email?.message} {...register("email")} />
+            <Field label="Số điện thoại" placeholder="Nhập số điện thoại" error={errors.phone?.message} {...register("phone")} />
           </div>
         </section>
 
@@ -93,10 +94,10 @@ export default function Profile() {
           </Button>
           <Button
             type="submit"
-            className="h-11 rounded-lg bg-stone-900 px-6 text-white hover:bg-stone-800"
+            className="h-11 rounded-lg bg-stone-900 px-6 text-white hover:bg-stone-800 flex items-center gap-2"
             disabled={updateProfile.isPending || !isDirty}
           >
-            {updateProfile.isPending ? 'Đang lưu…' : 'Lưu thay đổi'}
+            {updateProfile.isPending ? <><ButtonSpinner /> Đang lưu…</> : 'Lưu thay đổi'}
           </Button>
         </div>
       </form>
