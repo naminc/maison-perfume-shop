@@ -11,7 +11,7 @@ export const accountApi = {
     api.put<{ data: AuthUser }>('/v1/account/profile', payload).then(unwrap),
 
   changePassword: (payload: ChangePasswordPayload) =>
-    api.put<{ data: null }>('/v1/auth/change-password', payload).then(unwrap),
+    api.put<{ data: null }>('/v1/account/change-password', payload).then(unwrap),
 
   getSessions: (page = 1) =>
     api.get<{ data: PaginatedSessions }>('/v1/account/sessions', { params: { page } }).then(unwrap),

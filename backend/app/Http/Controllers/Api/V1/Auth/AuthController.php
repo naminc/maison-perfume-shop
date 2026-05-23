@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\V1\BaseController;
 use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\RegisterRequest;
-use App\Http\Requests\Api\V1\Auth\ChangePasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
 use App\Services\Interfaces\AuthServiceInterface;
 use App\Services\LoginSessionService;
@@ -124,27 +123,6 @@ class AuthController extends BaseController
         if (! $payload['reset']) {
             return api_error($payload['message'], $payload['status'] ?? 422, [
                 'token' => [$payload['message']],
-            ]);
-        }
-
-        return api_success(null, $payload['message']);
-    }
-
-    public function changePassword(ChangePasswordRequest $request)
-    {
-        $result = $this->authService->changePassword(
-            $request->user()->id,
-            $request->validated()
-        );
-
-        if (! $result['ok']) {
-            return api_error($result['message'], 500);
-        }
-
-        $payload = $result['data'];
-        if (! $payload['changed']) {
-            return api_error($payload['message'], 422, [
-                'current_password' => [$payload['message']],
             ]);
         }
 

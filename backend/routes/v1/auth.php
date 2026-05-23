@@ -12,8 +12,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('reset-password',  [AuthController::class, 'resetPassword'])->middleware('throttle:5,1')->name('reset-password');
 
     Route::middleware('auth:sanctum')->group(function () {
-        Route::post('logout',          [AuthController::class, 'logout'])->name('logout');
-        Route::put('change-password',  [AuthController::class, 'changePassword'])->name('change-password');
-        Route::get('me',               [AuthController::class, 'me'])->name('me');
+        Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+        Route::get('me',      [AuthController::class, 'me'])->name('me');
     });
 });
