@@ -1,14 +1,12 @@
 import { z } from 'zod';
-
-const normalizePhone = (value: string) => value.replace(/[\s.-]+/g, '');
-const phonePattern = /^(0\d{9,10}|\+84\d{9,10})$/;
+import { isValidVietnamPhone } from '@/lib/phone';
 
 export const addressSchema = z.object({
   receiver_name:    z.string().min(1, 'Vui lòng nhập tên người nhận.'),
   receiver_phone:   z.string()
     .trim()
     .min(1, 'Vui lòng nhập số điện thoại.')
-    .refine((value) => phonePattern.test(normalizePhone(value)), 'Số điện thoại không hợp lệ.'),
+    .refine(isValidVietnamPhone, 'Số điện thoại không hợp lệ.'),
   province_code:    z.string().min(1, 'Vui lòng chọn Tỉnh/Thành phố.'),
   province_name:    z.string().min(1),
   ward_code:        z.string().min(1, 'Vui lòng chọn Phường/Xã.'),

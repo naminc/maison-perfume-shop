@@ -1,9 +1,15 @@
 import { z } from 'zod';
+import { isValidVietnamPhone } from '@/lib/phone';
 
 export const updateProfileSchema = z.object({
   full_name: z.string().trim().min(2, 'Tên quá ngắn').max(100),
   email:     z.string().trim().email('Email không hợp lệ').max(255),
-  phone:     z.string().trim().max(15).optional().nullable(),
+  phone:     z.string()
+    .trim()
+    .max(15)
+    .optional()
+    .nullable()
+    .refine((value) => !value || isValidVietnamPhone(value), 'Số điện thoại không hợp lệ.'),
 });
 
 export const changePasswordSchema = z

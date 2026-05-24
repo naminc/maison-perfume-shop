@@ -5,7 +5,6 @@ namespace App\Http\Requests\Api\V1\Account;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Validation\Rule;
 
 class UpdateProfileRequest extends FormRequest
 {
@@ -18,7 +17,7 @@ class UpdateProfileRequest extends FormRequest
     {
         return [
             'full_name' => ['required', 'string', 'max:100'],
-            'phone'     => ['nullable', 'string', 'max:15'],
+            'phone'     => ['nullable', 'string', 'max:15', 'regex:/^(0\d{9,10}|\+84\d{9,10})$/'],
             'email'     => [
                 'required',
                 'string',
@@ -36,7 +35,21 @@ class UpdateProfileRequest extends FormRequest
             'email.required'     => 'Email không được để trống.',
             'email.email'        => 'Email không đúng định dạng.',
             'email.unique'       => 'Email đã được sử dụng.',
+            'phone.regex'        => 'Số điện thoại không hợp lệ.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $phone = $this->input('phone');
+
+        if (is_string($phone)) {
+            $normalizedPhone = preg_replace('/[\s.-]+/', '', trim($phone));
+
+            $this->merge([
+                'phone' => $normalizedPhone === '' ? null : $normalizedPhone,
+            ]);
+        }
     }
 
     protected function failedValidation(Validator $validator): void
