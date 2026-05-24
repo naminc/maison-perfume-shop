@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { AddressList } from "@/components/account/AddressList";
 import { AddressFormModal } from "@/components/account/AddressFormModal";
 import { useAddresses } from "@/hooks/useAddressQueries";
+import { useProvinces } from "@/hooks/useGeoQueries";
 import type { UserAddress } from "@/types/address";
 
 export default function Addresses() {
   const { data: addresses, isLoading } = useAddresses();
+  useProvinces();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<UserAddress | null>(null);
 

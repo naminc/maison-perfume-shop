@@ -17,6 +17,7 @@ import { ButtonSpinner } from "@/components/shared/ButtonSpinner";
 import { addressSchema, type AddressFormValues } from "@/schemas/address";
 import { useCreateAddress, useUpdateAddress } from "@/hooks/useAddressQueries";
 import { useProvinces, useWards } from "@/hooks/useGeoQueries";
+import { ADDRESS_TYPE_OPTIONS } from "@/constants/address";
 import { applyApiErrors } from "@/lib/form-utils";
 import type { ApiErrorResponse } from "@/types/auth";
 import type { UserAddress } from "@/types/address";
@@ -26,12 +27,6 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   editing: UserAddress | null;
 }
-
-const ADDRESS_TYPE_OPTIONS = [
-  { value: "home", label: "Nhà riêng" },
-  { value: "office", label: "Văn phòng" },
-  { value: "other", label: "Khác" },
-] as const;
 
 const DEFAULTS: AddressFormValues = {
   receiver_name: "",
@@ -43,6 +38,13 @@ const DEFAULTS: AddressFormValues = {
   specific_address: "",
   address_type: "home",
   is_default: false,
+};
+
+const getWardDisplayName = (wardFullName: string, provinceName: string) => {
+  const suffix = `, ${provinceName}`;
+  return provinceName && wardFullName.endsWith(suffix)
+    ? wardFullName.slice(0, -suffix.length)
+    : wardFullName;
 };
 
 export function AddressFormModal({ open, onOpenChange, editing }: Props) {
@@ -92,8 +94,9 @@ export function AddressFormModal({ open, onOpenChange, editing }: Props) {
 
   const handleWardChange = (code: string) => {
     const ward = wards.find((w) => w.code === code);
+    const province = provinces.find((p) => p.code === selectedProvinceCode);
     setValue("ward_code", code);
-    setValue("ward_name", ward?.full_name ?? "");
+    setValue("ward_name", ward ? getWardDisplayName(ward.full_name, province?.full_name ?? "") : "");
   };
 
   const onSubmit = (data: AddressFormValues) => {
@@ -119,8 +122,8 @@ export function AddressFormModal({ open, onOpenChange, editing }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         data-address-modal
-        overlayClassName="![animation:none]"
-        className="max-w-2xl max-h-[90dvh] overflow-y-auto sm:max-h-[85dvh] inset-x-0 bottom-0 top-auto translate-x-0 translate-y-0 sm:inset-auto sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] rounded-t-2xl sm:rounded-2xl p-5 sm:p-6 ![animation:none]"
+        disableAnimation
+        className="max-w-2xl max-h-[90dvh] overflow-y-auto sm:max-h-[85dvh] inset-x-0 bottom-0 top-auto translate-x-0 translate-y-0 sm:inset-auto sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] rounded-t-2xl sm:rounded-2xl p-5 sm:p-6"
       >
         <DialogHeader>
           <DialogTitle className="text-lg">{editing ? "Sửa địa chỉ" : "Thêm địa chỉ mới"}</DialogTitle>
@@ -153,7 +156,7 @@ export function AddressFormModal({ open, onOpenChange, editing }: Props) {
                     <SelectTrigger className="h-11 rounded-lg border-input bg-stone-50">
                       <SelectValue placeholder={isProvincesLoading ? "Đang tải Tỉnh/TP..." : "Chọn Tỉnh/Thành phố"} />
                     </SelectTrigger>
-                    <SelectContent className="max-h-52 sm:max-h-60 ![animation:none]" position="popper" sideOffset={4}>
+                    <SelectContent className="max-h-52 sm:max-h-60" position="popper" sideOffset={4}>
                       {isProvincesLoading && (
                         <SelectItem value="__loading_provinces" disabled>Đang tải Tỉnh/TP...</SelectItem>
                       )}
@@ -190,7 +193,7 @@ export function AddressFormModal({ open, onOpenChange, editing }: Props) {
                         }
                       />
                     </SelectTrigger>
-                    <SelectContent className="max-h-52 sm:max-h-60 ![animation:none]" position="popper" sideOffset={4}>
+                    <SelectContent className="max-h-52 sm:max-h-60" position="popper" sideOffset={4}>
                       {isWardsLoading && (
                         <SelectItem value="__loading_wards" disabled>Đang tải Phường/Xã...</SelectItem>
                       )}

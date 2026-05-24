@@ -1,8 +1,10 @@
 import { Pencil, Trash2, MapPin, Star } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ButtonSpinner } from "@/components/shared/ButtonSpinner";
 import { useDeleteAddress, useSetDefaultAddress } from "@/hooks/useAddressQueries";
+import { ADDRESS_PAGE_SIZE, ADDRESS_TYPE_LABELS } from "@/constants/address";
 import type { UserAddress } from "@/types/address";
 
 interface Props {
@@ -11,15 +13,26 @@ interface Props {
   onEdit: (address: UserAddress) => void;
 }
 
-const ADDRESS_TYPE_LABELS = {
-  home: "Nhà riêng",
-  office: "Văn phòng",
-  other: "Khác",
-} as const;
+const formatAddressArea = (address: UserAddress) => {
+  const wardName = address.ward_name.trim();
+  const provinceName = address.province_name.trim();
+
+  if (!wardName) return provinceName;
+  if (!provinceName || wardName.endsWith(provinceName)) return wardName;
+
+  return `${wardName}, ${provinceName}`;
+};
 
 export function AddressList({ addresses, isLoading, onEdit }: Props) {
+  const [page, setPage] = useState(1);
   const deleteAddress = useDeleteAddress();
   const setDefault = useSetDefaultAddress();
+  const addressItems = addresses ?? [];
+  const totalPages = Math.ceil(addressItems.length / ADDRESS_PAGE_SIZE);
+  const currentPage = totalPages > 0 ? Math.min(page, totalPages) : 1;
+  const startIndex = (currentPage - 1) * ADDRESS_PAGE_SIZE;
+  const endIndex = startIndex + ADDRESS_PAGE_SIZE;
+  const visibleAddresses = addressItems.slice(startIndex, endIndex);
 
   const handleDelete = (address: UserAddress) => {
     if (!confirm(`Xoá địa chỉ của "${address.receiver_name}"?`)) return;
@@ -67,8 +80,9 @@ export function AddressList({ addresses, isLoading, onEdit }: Props) {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {addresses.map((a) => (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        {visibleAddresses.map((a) => (
         <article
           key={a.id}
           className={`relative rounded-xl border bg-white p-5 transition-colors ${
@@ -112,9 +126,7 @@ export function AddressList({ addresses, isLoading, onEdit }: Props) {
           <p className="font-semibold">{a.receiver_name}</p>
           <p className="text-sm text-stone-500">{a.receiver_phone}</p>
           <p className="mt-2 text-sm text-stone-700">{a.specific_address}</p>
-          <p className="text-sm text-stone-500">
-            {a.ward_name}, {a.province_name}
-          </p>
+          <p className="text-sm text-stone-500">{formatAddressArea(a)}</p>
 
           {!a.is_default && (
             <button
@@ -128,7 +140,37 @@ export function AddressList({ addresses, isLoading, onEdit }: Props) {
             </button>
           )}
         </article>
-      ))}
+        ))}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex flex-col gap-3 border-t border-stone-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-stone-500">
+            Hiển thị {startIndex + 1}-{Math.min(endIndex, addressItems.length)} trong {addressItems.length} địa chỉ
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              disabled={currentPage === 1}
+              className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 transition-colors hover:border-stone-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-stone-300"
+            >
+              Trước
+            </button>
+            <span className="min-w-20 text-center text-sm text-stone-500">
+              Trang {currentPage}/{totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+              disabled={currentPage === totalPages}
+              className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 transition-colors hover:border-stone-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-stone-300"
+            >
+              Sau
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
