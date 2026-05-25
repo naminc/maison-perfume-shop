@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { PageLoader } from "@/components/shared/PageLoader";
 import { RouteLoader } from "@/components/shared/RouteLoader";
-import { GuestOnly, RequireAuth } from "@/routes/guards";
+import { GuestOnly, RequireAdmin, RequireAuth } from "@/routes/guards";
 
 const Landing = lazy(() => import("@/pages/Landing"));
 const Shop = lazy(() => import("@/pages/Shop"));
@@ -21,17 +21,13 @@ const Addresses = lazy(() => import("@/pages/account/Addresses"));
 const Wishlist = lazy(() => import("@/pages/account/Wishlist"));
 const Security = lazy(() => import("@/pages/account/Security"));
 const AppLayout = lazy(() => import("@/layouts/AppLayout"));
-const Dashboard = lazy(() => import("@/pages/app/Dashboard"));
-const Catalog = lazy(() => import("@/pages/app/Catalog"));
-const Movements = lazy(() => import("@/pages/app/Movements"));
-const Suppliers = lazy(() => import("@/pages/app/Suppliers"));
-const PurchaseOrders = lazy(() => import("@/pages/app/PurchaseOrders"));
-const Requests = lazy(() => import("@/pages/app/Requests"));
-const Locations = lazy(() => import("@/pages/app/Locations"));
-const Analytics = lazy(() => import("@/pages/app/Analytics"));
-const AiInsights = lazy(() => import("@/pages/app/AiInsights"));
-const Settings = lazy(() => import("@/pages/app/Settings"));
-const Help = lazy(() => import("@/pages/app/Help"));
+const Dashboard = lazy(() => import("@/pages/admin/Dashboard"));
+const Categories = lazy(() => import("@/pages/admin/Categories"));
+const Catalog = lazy(() => import("@/pages/admin/Catalog"));
+const AdminOrders = lazy(() => import("@/pages/admin/Orders"));
+const Contacts = lazy(() => import("@/pages/admin/Contacts"));
+const Settings = lazy(() => import("@/pages/admin/Settings"));
+const AdminNotFound = lazy(() => import("@/pages/admin/AdminNotFound"));
 
 const About = lazy(() => import("@/pages/content/About"));
 const Contact = lazy(() => import("@/pages/content/Contact"));
@@ -91,20 +87,17 @@ export function AppRoutes() {
           <Route path="/register" element={<Navigate to="/auth/register" replace />} />
           <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
 
-          <Route path="/admin" element={<AppLayout />}>
+          <Route path="/admin" element={<RequireAdmin><AppLayout /></RequireAdmin>}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="categories" element={<Categories />} />
             <Route path="catalog" element={<Catalog />} />
-            <Route path="movements" element={<Movements />} />
-            <Route path="suppliers" element={<Suppliers />} />
-            <Route path="purchase-orders" element={<PurchaseOrders />} />
-            <Route path="requests" element={<Requests />} />
-            <Route path="locations" element={<Locations />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="ai-insights" element={<AiInsights />} />
+            <Route path="products" element={<Navigate to="/admin/catalog" replace />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="contacts" element={<Contacts />} />
             <Route path="settings" element={<Settings />} />
-            <Route path="help" element={<Help />} />
           </Route>
+          <Route path="/admin/*" element={<RequireAdmin><AdminNotFound /></RequireAdmin>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, ShoppingBag, User, Heart, Phone, Mail, Menu, X, ChevronDown } from "lucide-react";
+import { Search, ShoppingBag, User, Heart, Phone, Mail, Menu, X, ChevronDown, Store } from "lucide-react";
 import { toast } from "sonner";
 import { useStorefront } from "@/hooks/useStorefront";
 import { useAuth } from "@/contexts/AuthContext";
@@ -65,6 +65,14 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
           <div className="flex items-center gap-4">
             {user ? (
               <>
+                {user.role === "admin" && (
+                  <>
+                    <Link to="/admin/dashboard" className="inline-flex items-center gap-1.5 font-medium hover:text-white">
+                      Quản lý cửa hàng
+                    </Link>
+                    <span className="opacity-50">|</span>
+                  </>
+                )}
                 <Link to="/account" className="hover:text-white">Tài khoản</Link>
                 <span className="opacity-50">|</span>
                 <button onClick={handleLogout} className="hover:text-white">Đăng xuất</button>
@@ -229,6 +237,11 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
             <div className="border-t border-stone-200 p-3 flex flex-col gap-2">
               {user ? (
                 <>
+                  {user.role === "admin" && (
+                    <Link to="/admin/dashboard" onClick={closeMenu} className="w-full rounded-md border border-emerald-700 py-2.5 text-center text-sm font-semibold text-emerald-700 hover:bg-emerald-50">
+                      Quản lý cửa hàng
+                    </Link>
+                  )}
                   <Link to="/account" onClick={closeMenu} className="w-full rounded-md bg-stone-900 py-2.5 text-center text-sm font-semibold text-white">
                     Tài khoản
                   </Link>

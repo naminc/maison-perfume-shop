@@ -22,6 +22,28 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return children;
 }
 
+export function RequireAdmin({ children }: { children: ReactNode }) {
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) return <PageLoader />;
+  if (!user) {
+    const redirectTo = `${location.pathname}${location.search}`;
+    return (
+      <Navigate
+        to={`/auth/login?redirect=${encodeURIComponent(redirectTo)}`}
+        replace
+      />
+    );
+  }
+
+  if (user.role !== "admin") {
+    return <Navigate to="/account" replace />;
+  }
+
+  return children;
+}
+
 export function GuestOnly({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const location = useLocation();

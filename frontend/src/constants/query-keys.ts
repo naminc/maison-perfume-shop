@@ -1,4 +1,7 @@
 export const QUERY_KEYS = {
+  admin: {
+    settings: ['admin', 'settings'] as const,
+  },
   account: {
     profile:   ['account', 'profile'] as const,
     sessions:  (page: number) => ['account', 'sessions', page] as const,

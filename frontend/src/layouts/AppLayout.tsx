@@ -1,54 +1,15 @@
-import { useEffect, useState } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+﻿import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
-import { DemoBanner } from "@/components/layout/DemoBanner";
-import { BottomNav } from "@/components/layout/BottomNav";
-import { ShortcutsHelpDialog } from "@/components/command/ShortcutsHelpDialog";
+import { Sidebar } from "@/components/admin/layout/Sidebar";
+import { Header } from "@/components/admin/layout/Header";
+import { BottomNav } from "@/components/admin/layout/BottomNav";
 import { PageTransition } from "@/components/shared/PageTransition";
-import { useDemo } from "@/hooks/useDemo";
-import { useRole } from "@/hooks/useRole";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { canAccessRoute } from "@/lib/route-guard";
-import { toast } from "sonner";
 
 export default function AppLayout() {
-  const { isDemo } = useDemo();
-  const { role } = useRole();
-  const navigate = useNavigate();
   const location = useLocation();
-  const [helpOpen, setHelpOpen] = useState(false);
-
-  // Global keyboard shortcuts
-  useKeyboardShortcuts({ onHelpOpen: () => setHelpOpen(true) });
-
-  // Role-based route guard
-  useEffect(() => {
-    if (isDemo && !canAccessRoute(location.pathname, role)) {
-      toast.error("You don't have permission to access that page.");
-      navigate("/admin/dashboard");
-    }
-  }, [location.pathname, role, navigate, isDemo]);
-
-  // Demo guard — redirect to landing if not in demo
-  useEffect(() => {
-    if (!isDemo) {
-      navigate(`/auth/login?redirect=${encodeURIComponent(location.pathname)}`);
-    }
-  }, [isDemo, location.pathname, navigate]);
-
-  if (!isDemo) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <DemoBanner />
       <div className="flex flex-1 overflow-hidden">
         <aside className="hidden w-[260px] shrink-0 md:block">
           <Sidebar />
@@ -65,7 +26,6 @@ export default function AppLayout() {
         </div>
       </div>
       <BottomNav />
-      <ShortcutsHelpDialog open={helpOpen} onOpenChange={setHelpOpen} />
     </div>
   );
 }

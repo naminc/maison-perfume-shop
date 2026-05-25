@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-/** Lấy 2 chữ cái đầu từ họ tên, ví dụ "Ngô Đình Nam" → "ĐN" */
+
 export function getInitials(fullName: string): string {
   return fullName
     .split(' ')

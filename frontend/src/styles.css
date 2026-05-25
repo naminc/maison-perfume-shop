@@ -196,17 +196,17 @@
     overflow-x: hidden;
   }
 
-  /* Unified input borders — soft stone across the whole app */
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
-  textarea,
+  /* Unified input borders — soft stone across the whole app (except admin inputs) */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([data-admin-input]),
+  textarea:not([data-admin-input]),
   select {
     border-color: #d6d3d1 !important; /* stone-300 */
   }
 
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):focus,
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):focus-visible,
-  textarea:focus,
-  textarea:focus-visible,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([data-admin-input]):focus,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([data-admin-input]):focus-visible,
+  textarea:not([data-admin-input]):focus,
+  textarea:not([data-admin-input]):focus-visible,
   select:focus,
   select:focus-visible {
     border-color: #a8a29e !important; /* stone-400 */

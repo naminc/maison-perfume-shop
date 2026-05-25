@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
-import { User, Package, MapPin, Heart, LogOut, Settings, ShieldCheck } from "lucide-react";
+import { User, Package, MapPin, Heart, LogOut, Settings, ShieldCheck, Store } from "lucide-react";
 import { toast } from "sonner";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
@@ -93,6 +93,15 @@ export default function AccountLayout({ title, subtitle, children }: Props) {
                   {label}
                 </NavLink>
               ))}
+              {user?.role === "admin" && (
+                <Link
+                  to="/admin/dashboard"
+                  className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-100"
+                >
+                  <Store className="h-4 w-4" />
+                  Quản lý cửa hàng
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"
