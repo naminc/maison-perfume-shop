@@ -13,8 +13,9 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('token', 64)->unique();
             $table->string('family', 36)->index();
-            $table->timestamp('expires_at');
+            $table->dateTime('expires_at');
             $table->timestamp('revoked_at')->nullable();
+            $table->string('revoked_reason', 50)->nullable()->index();
             $table->timestamp('created_at')->useCurrent();
         });
     }

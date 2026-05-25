@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('ward_code', 10);
             $table->string('ward_name');
             $table->string('specific_address');
+            $table->string('address_type', 20)->default('home');
             $table->boolean('is_default')->default(false);
             $table->timestamps();
 

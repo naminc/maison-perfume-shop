@@ -8,10 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('login_sessions', function (Blueprint $table) {
-            $table->timestamp('revoked_at')->nullable()->after('created_at')->index();
-        });
-
         Schema::table('refresh_tokens', function (Blueprint $table) {
             $table->foreignId('login_session_id')
                 ->nullable()
@@ -37,11 +33,6 @@ return new class extends Migration
 
         Schema::table('refresh_tokens', function (Blueprint $table) {
             $table->dropConstrainedForeignId('login_session_id');
-        });
-
-        Schema::table('login_sessions', function (Blueprint $table) {
-            $table->dropIndex(['revoked_at']);
-            $table->dropColumn('revoked_at');
         });
     }
 };

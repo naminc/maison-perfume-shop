@@ -9,10 +9,10 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class RefreshTokenService extends BaseService
 {
-    private const EXPIRY_DAYS = 7;
     private const REVOKED_BY_ROTATION = 'rotation';
     private const REVOKED_BY_SESSION = 'session';
     private const REVOKED_BY_SECURITY = 'security';
+    private const ROTATION_REUSE_GRACE_SECONDS = 30;
 
     /**
      * Create a new refresh token for a user.
@@ -28,7 +28,7 @@ class RefreshTokenService extends BaseService
             'login_session_id' => $loginSessionId,
             'token'            => hash('sha256', $plainToken),
             'family'           => $family,
-            'expires_at'       => now()->addDays(self::EXPIRY_DAYS),
+            'expires_at'       => now()->addDays((int) config('auth.refresh_tokens.expiration_days', 7)),
         ]);
 
         return $plainToken;
@@ -77,6 +77,10 @@ class RefreshTokenService extends BaseService
 
             if ($refreshToken->isRevoked()) {
                 if ($refreshToken->revoked_reason === self::REVOKED_BY_ROTATION) {
+                    if ($this->isLikelyRefreshRace($refreshToken, $loginSessionId)) {
+                        return ['valid' => false, 'message' => 'Refresh token đã được làm mới. Vui lòng thử lại.'];
+                    }
+
                     $this->revokeAllForUser($refreshToken->user_id, self::REVOKED_BY_SECURITY);
                     $this->revokeUserAccessTokens($refreshToken->user_id);
                     $this->revokeUserLoginSessions($refreshToken->user_id);
@@ -174,6 +178,15 @@ class RefreshTokenService extends BaseService
     private function revokeUserAccessTokens(int $userId): void
     {
         User::find($userId)?->tokens()->delete();
+    }
+
+    private function isLikelyRefreshRace(RefreshToken $refreshToken, ?int $loginSessionId): bool
+    {
+        return $loginSessionId
+            && $refreshToken->login_session_id
+            && (int) $refreshToken->login_session_id === $loginSessionId
+            && $refreshToken->revoked_at
+            && $refreshToken->revoked_at->greaterThan(now()->subSeconds(self::ROTATION_REUSE_GRACE_SECONDS));
     }
 
     private function revokeUserAccessTokensForSessionIds(int $userId, array $sessionIds): void

@@ -19,6 +19,7 @@ class UserSeeder extends Seeder
         User::create([
             'full_name' => 'Ngo Dinh Nam',
             'email' => 'admin@naminc.dev',
+            'phone' => '0347101143',
             'password' => Hash::make('naminc'),
             'role' => UserRole::Admin->value,
             'status' => UserStatus::Active->value,

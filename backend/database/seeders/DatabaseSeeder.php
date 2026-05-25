@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             VnGeoSeeder::class,
+            SettingSeeder::class,
+            UserAddressSeeder::class,
         ]);
     }
 }

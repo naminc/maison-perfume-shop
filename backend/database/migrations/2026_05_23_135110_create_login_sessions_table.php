@@ -20,6 +20,7 @@ return new class extends Migration
             $table->boolean('is_current')->default(false);
             $table->timestamp('last_active_at')->useCurrent();
             $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('revoked_at')->nullable()->index();
         });
     }
 
