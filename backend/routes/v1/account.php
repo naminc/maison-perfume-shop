@@ -12,6 +12,9 @@ Route::prefix('account')->name('account.')->group(function () {
 
     Route::put('change-password',  [PasswordController::class, 'change'])->name('password.change');
     Route::get('sessions',         [SessionController::class,  'index'])->name('sessions.index');
+    Route::post('sessions/revoke-others', [SessionController::class, 'revokeOthers'])->name('sessions.revoke-others');
+    Route::post('sessions/revoke-all',    [SessionController::class, 'revokeAll'])->name('sessions.revoke-all');
+    Route::delete('sessions/{session}',   [SessionController::class, 'destroy'])->name('sessions.destroy');
 
     Route::get('addresses',                [AddressController::class, 'index'])->name('addresses.index');
     Route::post('addresses',               [AddressController::class, 'store'])->name('addresses.store');

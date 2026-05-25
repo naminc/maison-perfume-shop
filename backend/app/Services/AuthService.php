@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\LoginSession;
 use App\Models\User;
 use App\Repositories\Interfaces\UserRepositoryInterface;
 use App\Services\Interfaces\AuthServiceInterface;
@@ -31,7 +32,7 @@ class AuthService extends BaseService implements AuthServiceInterface
                 'status'    => UserStatus::Active,
             ]);
 
-            $accessToken  = $user->createToken('auth')->plainTextToken;
+            $accessToken  = $this->refreshTokenService->createAccessToken($user);
             $refreshToken = $this->refreshTokenService->createRefreshToken($user);
 
             return [
@@ -61,10 +62,7 @@ class AuthService extends BaseService implements AuthServiceInterface
                 return ['authenticated' => false, 'message' => 'Tài khoản chưa được kích hoạt.'];
             }
 
-            $user->tokens()->where('name', 'auth')->delete();
-            $this->refreshTokenService->revokeAllForUser($user->id);
-
-            $accessToken  = $user->createToken('auth')->plainTextToken;
+            $accessToken  = $this->refreshTokenService->createAccessToken($user);
             $refreshToken = $this->refreshTokenService->createRefreshToken($user);
 
             return [
@@ -119,6 +117,7 @@ class AuthService extends BaseService implements AuthServiceInterface
 
                     $user->tokens()->delete();
                     $this->refreshTokenService->revokeAllForUser($user->id);
+                    $this->revokeLoginSessions($user->id);
 
                     event(new PasswordReset($user));
                 }
@@ -152,6 +151,7 @@ class AuthService extends BaseService implements AuthServiceInterface
 
             $user->tokens()->delete();
             $this->refreshTokenService->revokeAllForUser($userId);
+            $this->revokeLoginSessions($userId);
 
             return ['changed' => true, 'message' => 'Đổi mật khẩu thành công.'];
         }, 'changePassword');
@@ -167,8 +167,16 @@ class AuthService extends BaseService implements AuthServiceInterface
             }
             $user->tokens()->delete();
             $this->refreshTokenService->revokeAllForUser($userId);
+            $this->revokeLoginSessions($userId);
 
             return true;
         }, 'logout');
+    }
+
+    private function revokeLoginSessions(int $userId): void
+    {
+        LoginSession::where('user_id', $userId)
+            ->whereNull('revoked_at')
+            ->update(['revoked_at' => now(), 'is_current' => false]);
     }
 }

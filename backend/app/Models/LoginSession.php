@@ -19,12 +19,14 @@ class LoginSession extends Model
         'location',
         'is_current',
         'last_active_at',
+        'revoked_at',
     ];
 
     protected $casts = [
         'is_current'     => 'boolean',
         'last_active_at' => 'datetime',
         'created_at'     => 'datetime',
+        'revoked_at'     => 'datetime',
     ];
 
     public function user(): BelongsTo

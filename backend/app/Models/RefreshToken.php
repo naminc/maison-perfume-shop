@@ -11,10 +11,12 @@ class RefreshToken extends Model
 
     protected $fillable = [
         'user_id',
+        'login_session_id',
         'token',
         'family',
         'expires_at',
         'revoked_at',
+        'revoked_reason',
     ];
 
     protected $casts = [
@@ -26,6 +28,11 @@ class RefreshToken extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function loginSession(): BelongsTo
+    {
+        return $this->belongsTo(LoginSession::class);
     }
 
     public function isExpired(): bool

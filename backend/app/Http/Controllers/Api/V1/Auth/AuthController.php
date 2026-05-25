@@ -29,13 +29,19 @@ class AuthController extends BaseController
         }
 
         $payload = $result['data'];
-        $this->loginSessionService->recordSession($payload['user']->id, $request);
+        $session = $this->loginSessionService->recordSession($payload['user']->id, $request);
+        $this->refreshTokenService->attachTokensToSession(
+            $payload['access_token'],
+            $payload['refresh_token'],
+            $session->id,
+        );
 
         return api_created([
             'access_token'  => $payload['access_token'],
             'refresh_token' => $payload['refresh_token'],
             'token_type'    => $payload['token_type'],
             'expires_in'    => $payload['expires_in'],
+            'session_id'    => $session->id,
             'user'          => $payload['user'],
         ], 'Đăng ký thành công.');
     }
@@ -58,6 +64,11 @@ class AuthController extends BaseController
         }
 
         $session = $this->loginSessionService->recordSession($payload['user']->id, $request);
+        $this->refreshTokenService->attachTokensToSession(
+            $payload['access_token'],
+            $payload['refresh_token'],
+            $session->id,
+        );
 
         return api_success([
             'access_token'  => $payload['access_token'],
@@ -75,7 +86,10 @@ class AuthController extends BaseController
             'refresh_token' => ['required', 'string'],
         ]);
 
-        $result = $this->refreshTokenService->refresh($request->refresh_token);
+        $result = $this->refreshTokenService->refresh(
+            $request->refresh_token,
+            (int) $request->header('X-Session-Id') ?: null,
+        );
 
         if (! $result['ok']) {
             return api_error($result['message'], 500);
@@ -92,6 +106,7 @@ class AuthController extends BaseController
             'refresh_token' => $payload['refresh_token'],
             'token_type'    => 'Bearer',
             'expires_in'    => $payload['expires_in'],
+            'session_id'    => $payload['session_id'],
         ], 'Token refreshed.');
     }
 
@@ -131,7 +146,12 @@ class AuthController extends BaseController
 
     public function logout(Request $request)
     {
-        $result = $this->authService->logout($request->user()->id);
+        $sessionId = (int) ($request->user()->currentAccessToken()?->login_session_id ?? 0)
+            ?: (int) $request->header('X-Session-Id');
+
+        $result = $sessionId
+            ? $this->loginSessionService->revokeSession($request->user()->id, $sessionId, $sessionId)
+            : $this->authService->logout($request->user()->id);
 
         if (! $result['ok']) {
             return api_error($result['message'], 500);

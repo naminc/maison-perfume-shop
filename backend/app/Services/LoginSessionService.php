@@ -7,6 +7,10 @@ use Illuminate\Http\Request;
 
 class LoginSessionService extends BaseService
 {
+    public function __construct(
+        protected RefreshTokenService $refreshTokenService,
+    ) {}
+
     /**
      * Parse User-Agent thành device / platform / browser dạng đọc được.
      */
@@ -81,6 +85,7 @@ class LoginSessionService extends BaseService
         int $perPage = 5,
     ): array {
         $paginator = LoginSession::where('user_id', $userId)
+            ->whereNull('revoked_at')
             ->orderByDesc('last_active_at')
             ->paginate(perPage: $perPage, page: $page);
 
@@ -98,5 +103,98 @@ class LoginSessionService extends BaseService
                 'total'        => $paginator->total(),
             ],
         ];
+    }
+
+    public function revokeSession(int $userId, int $sessionId, ?int $currentSessionId = null): array
+    {
+        return $this->executeTransaction(function () use ($userId, $sessionId, $currentSessionId) {
+            $session = LoginSession::where('user_id', $userId)
+                ->whereKey($sessionId)
+                ->whereNull('revoked_at')
+                ->first();
+
+            if (! $session) {
+                return [
+                    'revoked'         => false,
+                    'revoked_current' => false,
+                    'message'         => 'Phiên đăng nhập không tồn tại hoặc đã bị đăng xuất.',
+                ];
+            }
+
+            $session->update([
+                'revoked_at' => now(),
+                'is_current' => false,
+            ]);
+
+            $this->refreshTokenService->revokeForSessionIds($userId, [$session->id]);
+
+            return [
+                'revoked'         => true,
+                'revoked_current' => $currentSessionId && $session->id === $currentSessionId,
+            ];
+        }, 'revokeSession');
+    }
+
+    public function revokeOtherSessions(int $userId, int $currentSessionId): array
+    {
+        return $this->executeTransaction(function () use ($userId, $currentSessionId) {
+            $currentSessionExists = LoginSession::where('user_id', $userId)
+                ->whereKey($currentSessionId)
+                ->whereNull('revoked_at')
+                ->exists();
+
+            if (! $currentSessionExists) {
+                return [
+                    'revoked' => false,
+                    'message' => 'Phiên đăng nhập hiện tại không hợp lệ.',
+                ];
+            }
+
+            $sessionIds = LoginSession::where('user_id', $userId)
+                ->where('id', '!=', $currentSessionId)
+                ->whereNull('revoked_at')
+                ->pluck('id')
+                ->all();
+
+            if ($sessionIds === []) {
+                return ['revoked' => true, 'revoked_count' => 0];
+            }
+
+            LoginSession::where('user_id', $userId)
+                ->whereIn('id', $sessionIds)
+                ->update([
+                    'revoked_at' => now(),
+                    'is_current' => false,
+                ]);
+
+            $this->refreshTokenService->revokeForSessionIds($userId, $sessionIds);
+
+            return ['revoked' => true, 'revoked_count' => count($sessionIds)];
+        }, 'revokeOtherSessions');
+    }
+
+    public function revokeAllSessions(int $userId): array
+    {
+        return $this->executeTransaction(function () use ($userId) {
+            $sessionIds = LoginSession::where('user_id', $userId)
+                ->whereNull('revoked_at')
+                ->pluck('id')
+                ->all();
+
+            if ($sessionIds === []) {
+                return ['revoked_count' => 0];
+            }
+
+            LoginSession::where('user_id', $userId)
+                ->whereIn('id', $sessionIds)
+                ->update([
+                    'revoked_at' => now(),
+                    'is_current' => false,
+                ]);
+
+            $this->refreshTokenService->revokeForSessionIds($userId, $sessionIds);
+
+            return ['revoked_count' => count($sessionIds)];
+        }, 'revokeAllSessions');
     }
 }
