@@ -33,3 +33,11 @@ export interface PaginatedSessions {
   items: LoginSessionItem[];
   meta: PaginationMeta;
 }
+
+export interface RevokeSessionResponse {
+  revoked_current: boolean;
+}
+
+export interface RevokeSessionsResponse {
+  revoked_count: number;
+}

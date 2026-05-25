@@ -22,9 +22,12 @@ export const authApi = {
   resetPassword: (payload: ResetPasswordPayload) =>
     api.post<{ data: null }>('/v1/auth/reset-password', payload).then(unwrap),
 
-  logout: (accessToken?: string | null) =>
+  logout: (accessToken?: string | null, sessionId?: string | null) =>
     api.post('/v1/auth/logout', undefined, accessToken ? {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...(sessionId ? { 'X-Session-Id': sessionId } : {}),
+      },
     } : undefined),
 
   me: () =>

@@ -19,6 +19,45 @@ export function useSessions(page: number) {
   });
 }
 
+function invalidateSessions(queryClient: ReturnType<typeof useQueryClient>) {
+  return queryClient.invalidateQueries({
+    queryKey: ['account', 'sessions'],
+  });
+}
+
+export function useRevokeSession() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sessionId: number) => accountApi.revokeSession(sessionId),
+    onSuccess: () => {
+      void invalidateSessions(queryClient);
+    },
+  });
+}
+
+export function useRevokeOtherSessions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: accountApi.revokeOtherSessions,
+    onSuccess: () => {
+      void invalidateSessions(queryClient);
+    },
+  });
+}
+
+export function useRevokeAllSessions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: accountApi.revokeAllSessions,
+    onSuccess: () => {
+      void invalidateSessions(queryClient);
+    },
+  });
+}
+
 export function useChangePassword() {
   return useMutation({
     mutationFn: (payload: ChangePasswordPayload) => accountApi.changePassword(payload),

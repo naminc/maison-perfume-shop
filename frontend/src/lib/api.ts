@@ -11,6 +11,11 @@ type ApiConnectionError = AxiosError & {
   __apiConnectionNotified?: boolean;
 };
 
+function isAuthEndpoint(url?: string) {
+  if (!url) return false;
+  return /\/v1\/auth\/(login|register|refresh|forgot-password|reset-password|logout)(\?|$)/.test(url);
+}
+
 function isLikelyHtmlResponse(data: unknown) {
   return typeof data === "string" && /<!doctype|<html/i.test(data);
 }
@@ -100,7 +105,7 @@ api.interceptors.response.use(
 
     const original = error.config;
 
-    if (error.response?.status !== 401 || original._retry) {
+    if (!original || error.response?.status !== 401 || original._retry || isAuthEndpoint(original.url)) {
       return Promise.reject(error);
     }
 
@@ -133,12 +138,14 @@ api.interceptors.response.use(
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
+            ...(tokenStorage.getSessionId() ? { "X-Session-Id": tokenStorage.getSessionId() } : {}),
           },
         },
       );
 
-      const { access_token, refresh_token } = data.data;
+      const { access_token, refresh_token, session_id } = data.data;
       tokenStorage.setTokens(access_token, refresh_token);
+      if (session_id) tokenStorage.setSessionId(session_id);
       processQueue(null, access_token);
 
       original.headers.Authorization = `Bearer ${access_token}`;

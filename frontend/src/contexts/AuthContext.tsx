@@ -44,12 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     const accessToken = tokenStorage.getAccess();
+    const sessionId = tokenStorage.getSessionId();
 
     tokenStorage.clearTokens();
     queryClient.setQueryData(QUERY_KEYS.account.profile, null);
     queryClient.clear();
 
-    void authApi.logout(accessToken).catch(() => {
+    void authApi.logout(accessToken, sessionId).catch(() => {
       // The local session is already cleared; server-side revoke failures are non-blocking.
     });
   };

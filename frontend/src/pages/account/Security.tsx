@@ -3,18 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Smartphone, ShieldCheck, Lock, KeyRound, Eye, EyeOff, Monitor, Tablet, ChevronLeft, ChevronRight } from "lucide-react";
+import { Smartphone, ShieldCheck, Lock, KeyRound, Eye, EyeOff, Monitor, Tablet, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import type { AxiosError } from "axios";
 import AccountLayout from "@/layouts/AccountLayout";
 import { ButtonSpinner } from "@/components/shared/ButtonSpinner";
+import { DeleteIconButton } from "@/components/shared/DeleteIconButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { changePasswordSchema, type ChangePasswordFormValues } from "@/schemas/account";
-import { useChangePassword, useSessions } from "@/hooks/useAccount";
+import { useChangePassword, useRevokeOtherSessions, useRevokeSession, useSessions } from "@/hooks/useAccount";
 import { useAuth } from "@/contexts/AuthContext";
 import { applyApiErrors } from "@/lib/form-utils";
+import type { LoginSessionItem } from "@/types/account";
 import type { ApiErrorResponse } from "@/types/auth";
 
 type FormValues = ChangePasswordFormValues;
@@ -45,8 +47,11 @@ export default function Security() {
     resolver: zodResolver(changePasswordSchema),
   });
   const changePassword = useChangePassword();
+  const revokeSession = useRevokeSession();
+  const revokeOtherSessions = useRevokeOtherSessions();
   const [sessionPage, setSessionPage] = useState(1);
   const { data: sessionsData, isLoading: sessionsLoading, isFetching: sessionsFetching } = useSessions(sessionPage);
+  const isRevokingSession = revokeSession.isPending || revokeOtherSessions.isPending;
 
   const onSubmit = (data: FormValues) => {
     changePassword.mutate(data, {
@@ -60,6 +65,45 @@ export default function Security() {
         const err = error as AxiosError<ApiErrorResponse<FormValues>>;
         if (applyApiErrors(err.response?.data?.errors, setError)) return;
         toast.error(err.response?.data?.message ?? "Đổi mật khẩu thất bại.");
+      },
+    });
+  };
+
+  const handleRevokeSession = (session: LoginSessionItem) => {
+    const message = session.is_current
+      ? "Đăng xuất phiên hiện tại? Bạn sẽ cần đăng nhập lại."
+      : `Đăng xuất phiên ${session.device} · ${session.browser}?`;
+
+    if (!confirm(message)) return;
+
+    revokeSession.mutate(session.id, {
+      onSuccess: async (data) => {
+        toast.success("Đã đăng xuất phiên đăng nhập.");
+
+        if (data.revoked_current) {
+          await logout();
+          navigate("/auth/login", { replace: true });
+        }
+      },
+      onError: () => {
+        toast.error("Không thể đăng xuất phiên đăng nhập.");
+      },
+    });
+  };
+
+  const handleRevokeOtherSessions = () => {
+    if (!confirm("Đăng xuất tất cả thiết bị khác?")) return;
+
+    revokeOtherSessions.mutate(undefined, {
+      onSuccess: (data) => {
+        toast.success(
+          data.revoked_count > 0
+            ? `Đã đăng xuất ${data.revoked_count} thiết bị khác.`
+            : "Không có thiết bị khác cần đăng xuất.",
+        );
+      },
+      onError: () => {
+        toast.error("Không thể đăng xuất các thiết bị khác.");
       },
     });
   };
@@ -112,8 +156,22 @@ export default function Security() {
 
       {/* Phiên đăng nhập */}
       <section className="mt-5 rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
-        <h2 className="flex items-center gap-2 text-base font-semibold"><Smartphone className="h-4 w-4" /> Phiên đăng nhập</h2>
-        <p className="mt-1 text-xs text-stone-500">Các thiết bị đã đăng nhập vào tài khoản của bạn.</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-base font-semibold"><Smartphone className="h-4 w-4" /> Phiên đăng nhập</h2>
+            <p className="mt-1 text-xs text-stone-500">Các thiết bị đã đăng nhập vào tài khoản của bạn.</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isRevokingSession || !sessionsData || sessionsData.meta.total <= 1}
+            onClick={handleRevokeOtherSessions}
+            className="h-9 rounded-lg border-stone-300 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+          >
+            {revokeOtherSessions.isPending ? <ButtonSpinner /> : <LogOut className="h-3.5 w-3.5" />}
+            Đăng xuất thiết bị khác
+          </Button>
+        </div>
 
         {sessionsLoading ? (
           <div className="mt-4 space-y-3">
@@ -133,7 +191,7 @@ export default function Security() {
               {sessionsData.items.map((s) => {
                 const DeviceIcon = getDeviceIcon(s.device ?? '');
                 return (
-                  <li key={s.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                  <li key={s.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0 sm:items-center">
                     <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-stone-100 text-stone-600">
                       <DeviceIcon className="h-4 w-4" />
                     </div>
@@ -150,6 +208,13 @@ export default function Security() {
                         {s.platform}{s.ip_address ? ` · ${s.ip_address}` : ''} · {formatRelativeTime(s.last_active_at)}
                       </div>
                     </div>
+                    <DeleteIconButton
+                      label="Đăng xuất phiên"
+                      title="Đăng xuất phiên"
+                      disabled={isRevokingSession}
+                      isLoading={revokeSession.isPending && revokeSession.variables === s.id}
+                      onClick={() => handleRevokeSession(s)}
+                    />
                   </li>
                 );
               })}
