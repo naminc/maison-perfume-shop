@@ -5,12 +5,16 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use App\Repositories\AddressRepository;
 use App\Repositories\Interfaces\AddressRepositoryInterface;
+use App\Repositories\Interfaces\SettingRepositoryInterface;
 use App\Repositories\Interfaces\UserRepositoryInterface;
+use App\Repositories\SettingRepository;
 use App\Repositories\UserRepository;
 use App\Services\AddressService;
 use App\Services\AuthService;
 use App\Services\Interfaces\AddressServiceInterface;
 use App\Services\Interfaces\AuthServiceInterface;
+use App\Services\Interfaces\SettingServiceInterface;
+use App\Services\SettingService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,10 +23,12 @@ class AppServiceProvider extends ServiceProvider
         // Services
         AuthServiceInterface::class    => AuthService::class,
         AddressServiceInterface::class => AddressService::class,
+        SettingServiceInterface::class => SettingService::class,
 
         // Repositories
         UserRepositoryInterface::class    => UserRepository::class,
         AddressRepositoryInterface::class => AddressRepository::class,
+        SettingRepositoryInterface::class => SettingRepository::class,
     ];
     /**
      * Register any application services.
