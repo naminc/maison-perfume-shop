@@ -1,4 +1,4 @@
-export type AdminSettingGroup = "general" | "social" | "seo";
+export type AdminSettingGroup = "general" | "social" | "seo" | "system";
 
 export type AdminSettingKey =
   | "store_name"
@@ -11,7 +11,9 @@ export type AdminSettingKey =
   | "facebook_url"
   | "instagram_url"
   | "meta_title"
-  | "meta_description";
+  | "meta_description"
+  | "maintenance_enabled"
+  | "maintenance_message";
 
 export type AdminSettings = Record<AdminSettingKey, string | null>;
 

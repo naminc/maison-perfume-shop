@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/admin/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/admin/ui/textarea";
 import { ButtonSpinner } from "@/components/shared/ButtonSpinner";
@@ -24,6 +25,8 @@ export default function Settings() {
   const updateSettings = useUpdateAdminSettings();
 
   const {
+    watch,
+    setValue,
     register,
     handleSubmit,
     reset,
@@ -87,7 +90,9 @@ export default function Settings() {
                       <SettingField
                         key={field}
                         name={field}
+                        value={watch(field)}
                         register={register}
+                        onValueChange={(value) => setValue(field, value, { shouldDirty: true, shouldValidate: true })}
                         error={errors[field]?.message}
                       />
                     ))}
@@ -122,17 +127,39 @@ export default function Settings() {
 
 function SettingField({
   name,
+  value,
   register,
+  onValueChange,
   error,
 }: {
   name: AdminSettingKey;
+  value: string;
   register: UseFormRegister<AdminSettingsFormValues>;
+  onValueChange: (value: string) => void;
   error?: string;
 }) {
   const field = ADMIN_SETTING_FIELDS[name];
   const isMultiline = "multiline" in field && field.multiline;
   const inputType = "type" in field ? field.type : "text";
   const className = "rounded-lg bg-white";
+
+  if (inputType === "switch") {
+    return (
+      <div className="space-y-1.5">
+        <div className="flex h-10 items-center justify-between rounded-lg border border-stone-200 bg-white px-3">
+          <Label htmlFor={name} className="text-sm font-medium text-stone-700">
+            {field.label}
+          </Label>
+          <Switch
+            id={name}
+            checked={value === "1"}
+            onCheckedChange={(checked) => onValueChange(checked ? "1" : "0")}
+          />
+        </div>
+        {error && <p className="text-xs text-red-600">{error}</p>}
+      </div>
+    );
+  }
 
   return (
     <div className={isMultiline ? "space-y-1.5 sm:col-span-2" : "space-y-1.5"}>

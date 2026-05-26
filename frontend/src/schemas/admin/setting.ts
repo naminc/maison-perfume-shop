@@ -18,6 +18,8 @@ export const adminSettingsSchema = z.object({
   instagram_url: optionalUrlSchema,
   meta_title: z.string().trim().max(70, "Meta title không được vượt quá 70 ký tự."),
   meta_description: z.string().trim().max(160, "Meta description không được vượt quá 160 ký tự."),
+  maintenance_enabled: z.string(),
+  maintenance_message: z.string().trim().max(500, "Thông báo bảo trì không được vượt quá 500 ký tự."),
 });
 
 export type AdminSettingsFormValues = z.infer<typeof adminSettingsSchema>;

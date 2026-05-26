@@ -1,37 +1,32 @@
-const KEYS = {
-  ACCESS:     'maison_access_token',
-  REFRESH:    'maison_refresh_token',
-  SESSION_ID: 'maison_session_id',
-  USER_CACHE: 'maison_user_cache',
-} as const;
+import { STORAGE_KEYS } from "@/constants/storage-keys";
 
 export const tokenStorage = {
-  getAccess:      () => localStorage.getItem(KEYS.ACCESS),
-  getRefresh:     () => localStorage.getItem(KEYS.REFRESH),
-  setAccess:      (t: string) => localStorage.setItem(KEYS.ACCESS, t),
-  setRefresh:     (t: string) => localStorage.setItem(KEYS.REFRESH, t),
-  getSessionId:   () => localStorage.getItem(KEYS.SESSION_ID),
-  setSessionId:   (id: string | number) => localStorage.setItem(KEYS.SESSION_ID, String(id)),
+  getAccess:      () => localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN),
+  getRefresh:     () => localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN),
+  setAccess:      (t: string) => localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, t),
+  setRefresh:     (t: string) => localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, t),
+  getSessionId:   () => localStorage.getItem(STORAGE_KEYS.SESSION_ID),
+  setSessionId:   (id: string | number) => localStorage.setItem(STORAGE_KEYS.SESSION_ID, String(id)),
   setTokens:      (access: string, refresh: string) => {
-    localStorage.setItem(KEYS.ACCESS, access);
-    localStorage.setItem(KEYS.REFRESH, refresh);
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access);
+    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh);
   },
   clearTokens:    () => {
-    localStorage.removeItem(KEYS.ACCESS);
-    localStorage.removeItem(KEYS.REFRESH);
-    localStorage.removeItem(KEYS.SESSION_ID);
-    sessionStorage.removeItem(KEYS.USER_CACHE);
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
+    sessionStorage.removeItem(STORAGE_KEYS.USER_CACHE);
   },
 
   getUserCache:  () => {
     try {
-      const raw = sessionStorage.getItem(KEYS.USER_CACHE);
+      const raw = sessionStorage.getItem(STORAGE_KEYS.USER_CACHE);
       return raw ? JSON.parse(raw) : null;
     } catch { return null; }
   },
   setUserCache:  (user: unknown) => {
-    try { sessionStorage.setItem(KEYS.USER_CACHE, JSON.stringify(user)); }
-    catch { /* quota exceeded — non-critical */ }
+    try { sessionStorage.setItem(STORAGE_KEYS.USER_CACHE, JSON.stringify(user)); }
+    catch { /* quota exceeded - non-critical */ }
   },
-  clearUserCache: () => sessionStorage.removeItem(KEYS.USER_CACHE),
+  clearUserCache: () => sessionStorage.removeItem(STORAGE_KEYS.USER_CACHE),
 };

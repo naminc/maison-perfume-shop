@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { PageLoader } from "@/components/shared/PageLoader";
 import { RouteLoader } from "@/components/shared/RouteLoader";
-import { GuestOnly, RequireAdmin, RequireAuth } from "@/routes/guards";
+import { AdminGuestOnly, GuestOnly, RequireAdmin, RequireAuth } from "@/routes/guards";
 
 const Landing = lazy(() => import("@/pages/Landing"));
 const Shop = lazy(() => import("@/pages/Shop"));
@@ -22,6 +22,7 @@ const Wishlist = lazy(() => import("@/pages/account/Wishlist"));
 const Security = lazy(() => import("@/pages/account/Security"));
 const AppLayout = lazy(() => import("@/layouts/AppLayout"));
 const Dashboard = lazy(() => import("@/pages/admin/Dashboard"));
+const AdminLogin = lazy(() => import("@/pages/admin/AdminLogin"));
 const Categories = lazy(() => import("@/pages/admin/Categories"));
 const Brands = lazy(() => import("@/pages/admin/Brands"));
 const Catalog = lazy(() => import("@/pages/admin/Catalog"));
@@ -88,6 +89,7 @@ export function AppRoutes() {
           <Route path="/register" element={<Navigate to="/auth/register" replace />} />
           <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
 
+          <Route path="/admin/login" element={<AdminGuestOnly><AdminLogin /></AdminGuestOnly>} />
           <Route path="/admin" element={<RequireAdmin><AppLayout /></RequireAdmin>}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />

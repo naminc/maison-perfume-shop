@@ -12,6 +12,8 @@ export const ADMIN_SETTINGS_DEFAULTS = {
   instagram_url: "",
   meta_title: "",
   meta_description: "",
+  maintenance_enabled: "0",
+  maintenance_message: "",
 } as const satisfies Record<AdminSettingKey, string>;
 
 export const ADMIN_SETTINGS_TABS = [
@@ -29,6 +31,11 @@ export const ADMIN_SETTINGS_TABS = [
     value: "seo",
     label: "SEO",
     fields: ["meta_title", "meta_description"],
+  },
+  {
+    value: "system",
+    label: "Hệ thống",
+    fields: ["maintenance_enabled", "maintenance_message"],
   },
 ] as const;
 
@@ -86,12 +93,22 @@ export const ADMIN_SETTING_FIELDS = {
     placeholder: "Mô tả ngắn cho công cụ tìm kiếm",
     multiline: true,
   },
+  maintenance_enabled: {
+    label: "Bật chế độ bảo trì",
+    placeholder: "",
+    type: "switch",
+  },
+  maintenance_message: {
+    label: "Thông báo bảo trì",
+    placeholder: "Website đang được bảo trì. Vui lòng quay lại sau.",
+    multiline: true,
+  },
 } as const satisfies Record<
   AdminSettingKey,
   {
     label: string;
     placeholder: string;
-    type?: "email" | "tel" | "url";
+    type?: "email" | "tel" | "url" | "switch";
     multiline?: boolean;
   }
 >;

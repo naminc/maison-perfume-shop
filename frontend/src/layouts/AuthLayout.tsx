@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, ShieldCheck, Sparkles, Star, Truck } from "lucide-react";
 import perfumeCollection from "@/assets/perfume-collection.jpg";
+import { getBrandParts } from "@/constants/site-settings";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
 
 interface AuthLayoutProps {
   title: string;
@@ -16,6 +18,9 @@ const HIGHLIGHTS = [
 ];
 
 export default function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
+  const { settings } = usePublicSettings();
+  const brand = getBrandParts(settings.store_name);
+
   return (
     <div className="flex min-h-screen">
 
@@ -32,9 +37,13 @@ export default function AuthLayout({ title, subtitle, children, footer }: AuthLa
         <div className="relative z-10 p-9">
           <Link to="/" className="inline-flex items-center gap-3 group">
             <span className="grid h-9 w-9 place-items-center rounded-full border border-white/25 bg-white/10 backdrop-blur transition group-hover:bg-white/20">
-              <span className="text-white">M</span>
+              {settings.logo ? (
+                <img src={settings.logo} alt={settings.store_name} className="h-7 w-7 rounded-full object-contain" />
+              ) : (
+                <span className="text-white">{brand.primary.charAt(0).toUpperCase()}</span>
+              )}
             </span>
-            <span className="text-lg font-semibold tracking-[0.18em] text-white uppercase">Maison</span>
+            <span className="text-lg font-semibold tracking-[0.18em] text-white uppercase">{settings.store_name}</span>
           </Link>
         </div>
 
@@ -75,9 +84,13 @@ export default function AuthLayout({ title, subtitle, children, footer }: AuthLa
           {/* Mobile logo */}
           <Link to="/" className="flex items-center gap-2.5 lg:hidden">
             <span className="grid h-7 w-7 place-items-center rounded-full bg-stone-900">
-              <Sparkles className="h-3.5 w-3.5 text-white" />
+              {settings.logo ? (
+                <img src={settings.logo} alt={settings.store_name} className="h-5 w-5 rounded-full object-contain" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5 text-white" />
+              )}
             </span>
-            <span className="text-base font-semibold tracking-[0.15em] text-stone-900 uppercase">Maison</span>
+            <span className="text-base font-semibold tracking-[0.15em] text-stone-900 uppercase">{brand.primary}</span>
           </Link>
           <div className="hidden lg:block" />
 

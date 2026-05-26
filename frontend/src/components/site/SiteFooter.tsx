@@ -1,13 +1,18 @@
 import { Link } from "react-router-dom";
-import { Phone, Mail } from "lucide-react";
+import { Mail, Phone } from "lucide-react";
+import { getPhoneHref } from "@/constants/site-settings";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
 
 export default function SiteFooter() {
+  const { settings } = usePublicSettings();
+  const phoneHref = getPhoneHref(settings.phone);
+
   return (
     <footer id="contact" className="bg-stone-900 text-stone-300">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 md:grid-cols-4">
         <div>
-          <div className="text-lg font-bold text-white">MAISON</div>
-          <p className="mt-3 text-sm text-stone-400">Nước hoa chính hãng, chọn lọc theo gu và phong cách sống.</p>
+          <div className="text-lg font-bold text-white">{settings.store_name}</div>
+          <p className="mt-3 text-sm text-stone-400">{settings.meta_description}</p>
         </div>
         <div>
           <div className="text-sm font-semibold text-white">Mua sắm</div>
@@ -32,8 +37,20 @@ export default function SiteFooter() {
         <div>
           <div className="text-sm font-semibold text-white">Liên hệ</div>
           <ul className="mt-3 space-y-2 text-sm">
-            <li className="flex items-center gap-2"><Phone className="h-4 w-4" /> 0987 654 321</li>
-            <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> hello@maison.vn</li>
+            {settings.phone && (
+              <li>
+                <a href={phoneHref} className="flex items-center gap-2 hover:text-white">
+                  <Phone className="h-4 w-4" /> {settings.phone}
+                </a>
+              </li>
+            )}
+            {settings.contact_email && (
+              <li>
+                <a href={`mailto:${settings.contact_email}`} className="flex items-center gap-2 hover:text-white">
+                  <Mail className="h-4 w-4" /> {settings.contact_email}
+                </a>
+              </li>
+            )}
             <li><Link to="/about" className="hover:text-white">Về Maison</Link></li>
             <li><Link to="/contact" className="hover:text-white">Liên hệ</Link></li>
             <li>
@@ -46,7 +63,7 @@ export default function SiteFooter() {
       </div>
       <div className="border-t border-stone-800">
         <div className="mx-auto max-w-7xl px-4 py-4 text-center text-xs text-stone-500">
-          © 2026 Maison. All rights reserved.
+          © 2026 {settings.store_name}. All rights reserved.
         </div>
       </div>
     </footer>

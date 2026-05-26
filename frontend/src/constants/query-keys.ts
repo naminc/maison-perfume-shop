@@ -30,4 +30,7 @@ export const QUERY_KEYS = {
   brands: {
     publicList: ['brands', 'public-list'] as const,
   },
+  settings: {
+    public: ['settings', 'public'] as const,
+  },
 } as const;

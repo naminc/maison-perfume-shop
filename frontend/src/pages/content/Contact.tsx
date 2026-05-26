@@ -3,12 +3,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Phone, Mail, MapPin, Clock, Facebook, Instagram } from "lucide-react";
+import { Clock, Facebook, Instagram, Mail, MapPin, Phone, type LucideIcon } from "lucide-react";
 import ContentPage from "@/components/site/ContentPage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { getPhoneHref } from "@/constants/site-settings";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Vui lòng nhập họ tên").max(100),
@@ -16,18 +18,28 @@ const schema = z.object({
   phone: z.string().trim().max(20).optional().or(z.literal("")),
   message: z.string().trim().min(10, "Tin nhắn quá ngắn").max(1000),
 });
+
 type FormValues = z.infer<typeof schema>;
 
-const INFO = [
-  { icon: Phone, t: "Hotline", d: "0987 654 321", d2: "8:00 - 22:00 hàng ngày" },
-  { icon: Mail, t: "Email", d: "hello@maison.vn", d2: "Phản hồi trong 24h" },
-  { icon: MapPin, t: "Cửa hàng", d: "123 Nguyễn Huệ, Q.1, TP. HCM", d2: "Mở cửa 9:00 - 21:00" },
-  { icon: Clock, t: "Giờ làm việc", d: "Thứ 2 - Chủ nhật", d2: "8:00 - 22:00" },
-];
+type ContactInfo = {
+  icon: LucideIcon;
+  t: string;
+  d: string;
+  d2: string;
+  href?: string;
+};
 
 export default function Contact() {
   const [loading, setLoading] = useState(false);
+  const { settings } = usePublicSettings();
+  const phoneHref = getPhoneHref(settings.phone);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const info = [
+    settings.phone ? { icon: Phone, t: "Hotline", d: settings.phone, d2: "8:00 - 22:00 hàng ngày", href: phoneHref } : null,
+    settings.contact_email ? { icon: Mail, t: "Email", d: settings.contact_email, d2: "Phản hồi trong 24h", href: `mailto:${settings.contact_email}` } : null,
+    settings.address ? { icon: MapPin, t: "Cửa hàng", d: settings.address, d2: "Mở cửa 9:00 - 21:00" } : null,
+    { icon: Clock, t: "Giờ làm việc", d: "Thứ 2 - Chủ nhật", d2: "8:00 - 22:00" },
+  ].filter((item): item is ContactInfo => Boolean(item));
 
   const onSubmit = async (_d: FormValues) => {
     setLoading(true);
@@ -66,34 +78,49 @@ export default function Contact() {
             </div>
             <div className="sm:col-span-2">
               <Button type="submit" disabled={loading} className="h-11 w-full rounded-lg bg-stone-900 text-white hover:bg-stone-800 sm:w-auto sm:px-8">
-                {loading ? "Đang gửi…" : "Gửi tin nhắn"}
+                {loading ? "Đang gửi..." : "Gửi tin nhắn"}
               </Button>
             </div>
           </form>
         </section>
 
         <aside className="space-y-4">
-          {INFO.map((i) => (
-            <div key={i.t} className="rounded-xl border border-stone-200 bg-white p-5">
-              <div className="flex gap-3">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-amber-50 text-amber-700">
-                  <i.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold">{i.t}</div>
-                  <div className="mt-0.5 text-sm text-stone-900">{i.d}</div>
-                  <div className="text-xs text-stone-500">{i.d2}</div>
+          {info.map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <div key={item.t} className="rounded-xl border border-stone-200 bg-white p-5">
+                <div className="flex gap-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-amber-50 text-amber-700">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">{item.t}</div>
+                    {item.href ? (
+                      <a href={item.href} className="mt-0.5 block text-sm text-stone-900 hover:text-amber-700">{item.d}</a>
+                    ) : (
+                      <div className="mt-0.5 text-sm text-stone-900">{item.d}</div>
+                    )}
+                    <div className="text-xs text-stone-500">{item.d2}</div>
+                  </div>
                 </div>
               </div>
+            );
+          })}
+
+          {(settings.facebook_url || settings.instagram_url) && (
+            <div className="rounded-xl border border-stone-200 bg-white p-5">
+              <div className="text-sm font-semibold">Theo dõi Maison</div>
+              <div className="mt-3 flex gap-2">
+                {settings.facebook_url && (
+                  <a href={settings.facebook_url} target="_blank" rel="noreferrer" aria-label="Facebook Maison" className="grid h-10 w-10 place-items-center rounded-full border border-stone-200 hover:bg-stone-50"><Facebook className="h-4 w-4" /></a>
+                )}
+                {settings.instagram_url && (
+                  <a href={settings.instagram_url} target="_blank" rel="noreferrer" aria-label="Instagram Maison" className="grid h-10 w-10 place-items-center rounded-full border border-stone-200 hover:bg-stone-50"><Instagram className="h-4 w-4" /></a>
+                )}
+              </div>
             </div>
-          ))}
-          <div className="rounded-xl border border-stone-200 bg-white p-5">
-            <div className="text-sm font-semibold">Theo dõi Maison</div>
-            <div className="mt-3 flex gap-2">
-              <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" aria-label="Facebook Maison" className="grid h-10 w-10 place-items-center rounded-full border border-stone-200 hover:bg-stone-50"><Facebook className="h-4 w-4" /></a>
-              <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram Maison" className="grid h-10 w-10 place-items-center rounded-full border border-stone-200 hover:bg-stone-50"><Instagram className="h-4 w-4" /></a>
-            </div>
-          </div>
+          )}
         </aside>
       </div>
     </ContentPage>

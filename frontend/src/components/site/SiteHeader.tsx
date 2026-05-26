@@ -4,6 +4,8 @@ import { Search, ShoppingBag, User, Heart, Phone, Mail, Menu, X, ChevronDown, St
 import { toast } from "sonner";
 import { useStorefront } from "@/hooks/useStorefront";
 import { useAuth } from "@/contexts/AuthContext";
+import { getBrandParts, getPhoneHref } from "@/constants/site-settings";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
 
 const PRODUCT_MENU: { label: string; to: string }[] = [
   { label: "Nước hoa Nam", to: "/category/nam" },
@@ -23,6 +25,9 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
   const navigate = useNavigate();
   const storefront = useStorefront();
   const { user, logout } = useAuth();
+  const { settings } = usePublicSettings();
+  const brand = getBrandParts(settings.store_name);
+  const phoneHref = getPhoneHref(settings.phone);
   const displayedCartCount = cartCount ?? storefront.cartCount;
   const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -59,8 +64,16 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
       <div className="bg-stone-900 text-stone-200 text-xs">
         <div className="mx-auto flex min-h-9 max-w-7xl items-center justify-between px-4 py-2.5">
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> 0987 654 321</span>
-            <span className="hidden sm:flex items-center gap-1.5"><Mail className="h-3 w-3" /> hello@maison.vn</span>
+            {settings.phone && (
+              <a href={phoneHref} className="flex items-center gap-1.5 hover:text-white">
+                <Phone className="h-3 w-3" /> {settings.phone}
+              </a>
+            )}
+            {settings.contact_email && (
+              <a href={`mailto:${settings.contact_email}`} className="hidden items-center gap-1.5 hover:text-white sm:flex">
+                <Mail className="h-3 w-3" /> {settings.contact_email}
+              </a>
+            )}
           </div>
           <div className="flex items-center gap-4">
             {user ? (
@@ -100,12 +113,20 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
           </button>
 
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-stone-900 text-white text-sm font-semibold">M</div>
+            {settings.logo ? (
+              <img src={settings.logo} alt={settings.store_name} className="h-9 w-9 rounded-full object-contain" />
+            ) : (
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-stone-900 text-white text-sm font-semibold">
+                {brand.primary.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="leading-tight hidden sm:block">
-              <div className="text-base font-bold tracking-wide">MAISON</div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-stone-500">PERFUME</div>
+              <div className="text-base font-bold tracking-wide uppercase">{brand.primary}</div>
+              {brand.secondary && (
+                <div className="text-[10px] uppercase tracking-[0.2em] text-stone-500">{brand.secondary}</div>
+              )}
             </div>
-            <div className="text-base font-bold tracking-wide sm:hidden">MAISON</div>
+            <div className="text-base font-bold tracking-wide uppercase sm:hidden">{brand.primary}</div>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1 ml-4">
@@ -180,7 +201,7 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
             className={`absolute left-0 top-0 h-full w-72 max-w-[80%] bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${mobileVisible ? 'translate-x-0' : '-translate-x-full'}`}
           >
             <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
-              <div className="text-base font-bold">MAISON</div>
+              <div className="text-base font-bold uppercase">{settings.store_name}</div>
               <button onClick={closeMenu} className="grid h-9 w-9 place-items-center rounded-full hover:bg-stone-100" aria-label="Đóng">
                 <X className="h-5 w-5" />
               </button>

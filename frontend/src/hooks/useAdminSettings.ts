@@ -19,6 +19,7 @@ export function useUpdateAdminSettings() {
     mutationFn: (payload: UpdateAdminSettingsPayload) => adminSettingApi.update(payload),
     onSuccess: (data) => {
       queryClient.setQueryData(QUERY_KEYS.admin.settings, data);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.settings.public });
     },
   });
 }

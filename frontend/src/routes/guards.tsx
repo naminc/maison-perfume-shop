@@ -31,7 +31,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
     const redirectTo = `${location.pathname}${location.search}`;
     return (
       <Navigate
-        to={`/auth/login?redirect=${encodeURIComponent(redirectTo)}`}
+        to={`/admin/login?redirect=${encodeURIComponent(redirectTo)}`}
         replace
       />
     );
@@ -54,6 +54,26 @@ export function GuestOnly({ children }: { children: ReactNode }) {
       new URLSearchParams(location.search).get("redirect"),
     );
     return <Navigate to={redirect ?? "/account"} replace />;
+  }
+
+  return children;
+}
+
+export function AdminGuestOnly({ children }: { children: ReactNode }) {
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) return <PageLoader />;
+  if (user) {
+    if (user.role !== "admin") {
+      return <Navigate to="/account" replace />;
+    }
+
+    const redirect = getSafeRedirectPath(
+      new URLSearchParams(location.search).get("redirect"),
+    );
+
+    return <Navigate to={redirect?.startsWith("/admin") ? redirect : "/admin/dashboard"} replace />;
   }
 
   return children;

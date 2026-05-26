@@ -18,14 +18,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const hasStoredSession = !!tokenStorage.getAccess() || !!tokenStorage.getRefresh();
+  const cachedUser = tokenStorage.getUserCache() as AuthUser | null;
 
   const { data: user = null, isLoading } = useQuery({
     queryKey: QUERY_KEYS.account.profile,
     queryFn: accountApi.getProfile,
-    enabled: !!tokenStorage.getAccess(),
+    enabled: hasStoredSession,
     retry: false,
     staleTime: STALE_TIME.LONG,
-    initialData: tokenStorage.getUserCache() as AuthUser | undefined,
+    initialData: cachedUser ?? undefined,
     initialDataUpdatedAt: 0,
   });
 

@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { STALE_TIME } from '@/constants/query-config';
 import { QUERY_KEYS } from '@/constants/query-keys';
 import { accountApi } from '@/api/account';
+import { settingApi } from '@/api/setting';
 import { tokenStorage } from '@/lib/token';
 
 export const queryClient = new QueryClient({
@@ -18,7 +19,13 @@ export const queryClient = new QueryClient({
  * Gọi 1 lần duy nhất ở entry point — tách ra để main.tsx gọn.
  */
 export function prefetchCriticalData() {
-  if (tokenStorage.getAccess()) {
+  queryClient.prefetchQuery({
+    queryKey: QUERY_KEYS.settings.public,
+    queryFn: settingApi.getPublic,
+    staleTime: STALE_TIME.LONG,
+  });
+
+  if (tokenStorage.getAccess() || tokenStorage.getRefresh()) {
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.account.profile,
       queryFn: accountApi.getProfile,
@@ -26,4 +33,3 @@ export function prefetchCriticalData() {
     });
   }
 }
-
