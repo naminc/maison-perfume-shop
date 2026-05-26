@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AxiosError } from "axios";
-import { Download, Plus, RefreshCw, Tags } from "lucide-react";
+import { BadgeCheck, Download, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { adminCategoryApi } from "@/api/admin/category";
+import { adminBrandApi } from "@/api/admin/brand";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,42 +15,42 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CategoryFilters } from "@/components/admin/categories/CategoryFilters";
-import { CategoryFormSheet } from "@/components/admin/categories/CategoryFormSheet";
-import { CategoryTable } from "@/components/admin/categories/CategoryTable";
+import { BrandFilters } from "@/components/admin/brands/BrandFilters";
+import { BrandFormSheet } from "@/components/admin/brands/BrandFormSheet";
+import { BrandTable } from "@/components/admin/brands/BrandTable";
 import { AdminBulkActionBar } from "@/components/admin/shared/AdminBulkActionBar";
 import { ButtonSpinner } from "@/components/shared/ButtonSpinner";
-import { CATEGORY_PAGE_SIZE, CATEGORY_STATUS_LABELS } from "@/constants/category";
-import { useAdminCategories, useDeleteCategory } from "@/hooks/useAdminCategories";
+import { BRAND_PAGE_SIZE, BRAND_STATUS_LABELS } from "@/constants/brand";
+import { useAdminBrands, useDeleteBrand } from "@/hooks/useAdminBrands";
 import { wasApiConnectionNotified } from "@/lib/api";
 import { exportExcel, type ExcelColumn } from "@/lib/export-excel";
 import type { ApiErrorResponse } from "@/types/auth";
-import type { Category, CategoryListParams, CategoryListStatusFilter } from "@/types/category";
+import type { Brand, BrandListParams, BrandListStatusFilter } from "@/types/brand";
 
-export default function Categories() {
+export default function Brands() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [status, setStatus] = useState<CategoryListStatusFilter>("all");
+  const [status, setStatus] = useState<BrandListStatusFilter>("all");
   const [page, setPage] = useState(1);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<number>>(new Set());
+  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  const [deletingBrand, setDeletingBrand] = useState<Brand | null>(null);
+  const [selectedBrandIds, setSelectedBrandIds] = useState<Set<number>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  const deleteCategory = useDeleteCategory();
+  const deleteBrand = useDeleteBrand();
 
-  const listParams = useMemo<CategoryListParams>(() => ({
+  const listParams = useMemo<BrandListParams>(() => ({
     search: debouncedSearch,
     status,
     page,
-    per_page: CATEGORY_PAGE_SIZE,
+    per_page: BRAND_PAGE_SIZE,
   }), [debouncedSearch, page, status]);
 
-  const categoriesQuery = useAdminCategories(listParams);
+  const brandsQuery = useAdminBrands(listParams);
 
-  const categories = categoriesQuery.data?.data ?? [];
+  const brands = brandsQuery.data?.data ?? [];
   const hasFilters = Boolean(debouncedSearch.trim()) || status !== "all";
 
   useEffect(() => {
@@ -63,16 +63,16 @@ export default function Categories() {
 
   useEffect(() => {
     setPage(1);
-    setSelectedCategoryIds(new Set());
+    setSelectedBrandIds(new Set());
   }, [debouncedSearch, status]);
 
   const openCreate = () => {
-    setEditingCategory(null);
+    setEditingBrand(null);
     setSheetOpen(true);
   };
 
-  const openEdit = (category: Category) => {
-    setEditingCategory(category);
+  const openEdit = (brand: Brand) => {
+    setEditingBrand(brand);
     setSheetOpen(true);
   };
 
@@ -83,69 +83,69 @@ export default function Categories() {
   };
 
   const confirmDelete = () => {
-    if (!deletingCategory) return;
+    if (!deletingBrand) return;
 
-    deleteCategory.mutate(deletingCategory.id, {
+    deleteBrand.mutate(deletingBrand.id, {
       onSuccess: () => {
-        toast.success("Đã xoá danh mục.");
-        setDeletingCategory(null);
-        setSelectedCategoryIds((current) => {
+        toast.success("Đã xoá thương hiệu.");
+        setDeletingBrand(null);
+        setSelectedBrandIds((current) => {
           const next = new Set(current);
-          next.delete(deletingCategory.id);
+          next.delete(deletingBrand.id);
           return next;
         });
-        if (categories.length === 1 && page > 1) {
+        if (brands.length === 1 && page > 1) {
           setPage((current) => current - 1);
         }
       },
       onError: (error) => {
         if (wasApiConnectionNotified(error)) return;
-        toast.error(getApiErrorMessage(error, "Xoá danh mục thất bại."));
+        toast.error(getApiErrorMessage(error, "Xoá thương hiệu thất bại."));
       },
     });
   };
 
   const confirmBulkDelete = async () => {
-    const ids = Array.from(selectedCategoryIds);
+    const ids = Array.from(selectedBrandIds);
     if (ids.length === 0) return;
 
     try {
-      await Promise.all(ids.map((id) => deleteCategory.mutateAsync(id)));
-      toast.success(`Đã xoá ${ids.length} danh mục.`);
-      setSelectedCategoryIds(new Set());
+      await Promise.all(ids.map((id) => deleteBrand.mutateAsync(id)));
+      toast.success(`Đã xoá ${ids.length} thương hiệu.`);
+      setSelectedBrandIds(new Set());
       setBulkDeleteOpen(false);
-      if (ids.length >= categories.length && page > 1) {
+      if (ids.length >= brands.length && page > 1) {
         setPage((current) => current - 1);
       }
     } catch (error) {
       if (wasApiConnectionNotified(error)) return;
-      toast.error(getApiErrorMessage(error, "Xoá danh mục đã chọn thất bại."));
+      toast.error(getApiErrorMessage(error, "Xoá thương hiệu đã chọn thất bại."));
     }
   };
 
-  const exportCategories = async () => {
+  const exportBrands = async () => {
     setIsExporting(true);
 
     try {
-      const response = await adminCategoryApi.getCategories({
+      const response = await adminBrandApi.getBrands({
         search: debouncedSearch,
         status,
         per_page: 100,
       });
 
       if (response.data.length === 0) {
-        toast.error("Không có danh mục để xuất.");
+        toast.error("Không có thương hiệu để xuất.");
         return;
       }
 
       await exportExcel({
         rows: response.data,
-        columns: CATEGORY_EXPORT_COLUMNS,
-        filename: "maison-categories",
-        sheetName: "Danh mục",
+        columns: BRAND_EXPORT_COLUMNS,
+        filename: "maison-brands",
+        sheetName: "Thương hiệu",
       });
 
-      toast.success("Đã xuất file Excel danh mục.");
+      toast.success("Đã xuất file Excel thương hiệu.");
     } catch (error) {
       if (wasApiConnectionNotified(error)) return;
       toast.error(getApiErrorMessage(error, "Xuất Excel thất bại."));
@@ -158,16 +158,16 @@ export default function Categories() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Danh mục</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Thương hiệu</h1>
           <p className="text-sm text-muted-foreground">
-            {categoriesQuery.data?.total ?? 0} danh mục
+            {brandsQuery.data?.total ?? 0} thương hiệu
           </p>
         </div>
         <div className="hidden items-center gap-2 sm:flex">
           <Button
             variant="outline"
-            onClick={exportCategories}
-            disabled={isExporting || categoriesQuery.isLoading}
+            onClick={exportBrands}
+            disabled={isExporting || brandsQuery.isLoading}
             className="gap-1.5"
           >
             {isExporting ? <ButtonSpinner /> : <Download className="h-4 w-4" />}
@@ -175,83 +175,83 @@ export default function Categories() {
           </Button>
           <Button onClick={openCreate} className="gap-1.5">
             <Plus className="h-4 w-4" />
-            Thêm danh mục
+            Thêm thương hiệu
           </Button>
         </div>
       </div>
 
       <Card className="p-4">
-        <CategoryFilters
+        <BrandFilters
           search={search}
           status={status}
-          isFetching={categoriesQuery.isFetching}
+          isFetching={brandsQuery.isFetching}
           onSearchChange={setSearch}
           onStatusChange={setStatus}
           onClear={clearFilters}
-          onRefresh={() => categoriesQuery.refetch()}
+          onRefresh={() => brandsQuery.refetch()}
         />
       </Card>
 
-      {categoriesQuery.isError ? (
+      {brandsQuery.isError ? (
         <div className="flex flex-col items-center justify-center rounded-md border border-border bg-white px-4 py-14 text-center">
-          <Tags className="mb-3 h-10 w-10 text-muted-foreground/50" strokeWidth={1.5} />
-          <h3 className="text-base font-semibold text-foreground">Không thể tải danh mục</h3>
+          <BadgeCheck className="mb-3 h-10 w-10 text-muted-foreground/50" strokeWidth={1.5} />
+          <h3 className="text-base font-semibold text-foreground">Không thể tải thương hiệu</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            {getApiErrorMessage(categoriesQuery.error, "Vui lòng thử lại sau.")}
+            {getApiErrorMessage(brandsQuery.error, "Vui lòng thử lại sau.")}
           </p>
-          <Button className="mt-4" onClick={() => categoriesQuery.refetch()}>
+          <Button className="mt-4" onClick={() => brandsQuery.refetch()}>
             <RefreshCw className="h-4 w-4" />
             Thử lại
           </Button>
         </div>
       ) : (
-        <CategoryTable
-          categories={categories}
-          pagination={categoriesQuery.data}
-          isLoading={categoriesQuery.isLoading}
+        <BrandTable
+          brands={brands}
+          pagination={brandsQuery.data}
+          isLoading={brandsQuery.isLoading}
           hasFilters={hasFilters}
           currentPage={page}
-          isFetching={categoriesQuery.isFetching}
-          selectedIds={selectedCategoryIds}
+          isFetching={brandsQuery.isFetching}
+          selectedIds={selectedBrandIds}
           onPageChange={(nextPage) => {
-            setSelectedCategoryIds(new Set());
+            setSelectedBrandIds(new Set());
             setPage(nextPage);
           }}
           onCreate={openCreate}
           onEdit={openEdit}
-          onDelete={setDeletingCategory}
-          onSelectedChange={setSelectedCategoryIds}
+          onDelete={setDeletingBrand}
+          onSelectedChange={setSelectedBrandIds}
         />
       )}
 
-      <CategoryFormSheet
+      <BrandFormSheet
         open={sheetOpen}
         onOpenChange={(open) => {
           setSheetOpen(open);
-          if (!open) setEditingCategory(null);
+          if (!open) setEditingBrand(null);
         }}
-        category={editingCategory}
+        brand={editingBrand}
       />
 
-      <AlertDialog open={Boolean(deletingCategory)} onOpenChange={(open) => !open && setDeletingCategory(null)}>
+      <AlertDialog open={Boolean(deletingBrand)} onOpenChange={(open) => !open && setDeletingBrand(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xoá danh mục {deletingCategory?.name}?</AlertDialogTitle>
+            <AlertDialogTitle>Xoá thương hiệu {deletingBrand?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Hành động này không thể hoàn tác. Danh mục sẽ bị xoá khỏi trang quản trị.
+              Hành động này không thể hoàn tác. Thương hiệu sẽ bị xoá khỏi trang quản trị.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteCategory.isPending}>Huỷ</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteBrand.isPending}>Huỷ</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteCategory.isPending}
+              disabled={deleteBrand.isPending}
               onClick={(event) => {
                 event.preventDefault();
                 confirmDelete();
               }}
             >
-              {deleteCategory.isPending && <ButtonSpinner />}
+              {deleteBrand.isPending && <ButtonSpinner />}
               Xoá
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -261,22 +261,22 @@ export default function Categories() {
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xoá {selectedCategoryIds.size} danh mục đã chọn?</AlertDialogTitle>
+            <AlertDialogTitle>Xoá {selectedBrandIds.size} thương hiệu đã chọn?</AlertDialogTitle>
             <AlertDialogDescription>
-              Hành động này không thể hoàn tác. Các danh mục đã chọn sẽ bị xoá khỏi trang quản trị.
+              Hành động này không thể hoàn tác. Các thương hiệu đã chọn sẽ bị xoá khỏi trang quản trị.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteCategory.isPending}>Huỷ</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteBrand.isPending}>Huỷ</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteCategory.isPending}
+              disabled={deleteBrand.isPending}
               onClick={(event) => {
                 event.preventDefault();
                 confirmBulkDelete();
               }}
             >
-              {deleteCategory.isPending && <ButtonSpinner />}
+              {deleteBrand.isPending && <ButtonSpinner />}
               Xoá
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -284,19 +284,19 @@ export default function Categories() {
       </AlertDialog>
 
       <AdminBulkActionBar
-        selectedCount={selectedCategoryIds.size}
-        itemLabel="danh mục"
-        isDeleting={deleteCategory.isPending}
+        selectedCount={selectedBrandIds.size}
+        itemLabel="thương hiệu"
+        isDeleting={deleteBrand.isPending}
         onDeleteSelected={() => setBulkDeleteOpen(true)}
-        onDeselectAll={() => setSelectedCategoryIds(new Set())}
+        onDeselectAll={() => setSelectedBrandIds(new Set())}
       />
 
-      {selectedCategoryIds.size === 0 && (
+      {selectedBrandIds.size === 0 && (
         <button
           type="button"
           onClick={openCreate}
           className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 sm:hidden"
-          aria-label="Thêm danh mục"
+          aria-label="Thêm thương hiệu"
         >
           <Plus className="h-6 w-6" />
         </button>
@@ -310,30 +310,34 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   return err.response?.data?.message ?? err.message ?? fallback;
 }
 
-const CATEGORY_EXPORT_COLUMNS: ExcelColumn<Category>[] = [
+const BRAND_EXPORT_COLUMNS: ExcelColumn<Brand>[] = [
   {
     header: "STT",
-    accessor: (_category, index) => index + 1,
+    accessor: (_brand, index) => index + 1,
   },
   {
-    header: "Tên danh mục",
-    accessor: (category) => category.name,
+    header: "Tên thương hiệu",
+    accessor: (brand) => brand.name,
   },
   {
     header: "Slug",
-    accessor: (category) => category.slug,
+    accessor: (brand) => brand.slug,
+  },
+  {
+    header: "Website",
+    accessor: (brand) => brand.website,
   },
   {
     header: "Trạng thái",
-    accessor: (category) => CATEGORY_STATUS_LABELS[category.status],
+    accessor: (brand) => BRAND_STATUS_LABELS[brand.status],
   },
   {
     header: "Thứ tự",
-    accessor: (category) => category.sort_order,
+    accessor: (brand) => brand.sort_order,
   },
   {
     header: "Ngày cập nhật",
-    accessor: (category) => formatDate(category.updated_at),
+    accessor: (brand) => formatDate(brand.updated_at),
   },
 ];
 

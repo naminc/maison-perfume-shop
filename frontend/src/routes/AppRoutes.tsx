@@ -23,6 +23,7 @@ const Security = lazy(() => import("@/pages/account/Security"));
 const AppLayout = lazy(() => import("@/layouts/AppLayout"));
 const Dashboard = lazy(() => import("@/pages/admin/Dashboard"));
 const Categories = lazy(() => import("@/pages/admin/Categories"));
+const Brands = lazy(() => import("@/pages/admin/Brands"));
 const Catalog = lazy(() => import("@/pages/admin/Catalog"));
 const AdminOrders = lazy(() => import("@/pages/admin/Orders"));
 const Contacts = lazy(() => import("@/pages/admin/Contacts"));
@@ -91,6 +92,7 @@ export function AppRoutes() {
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="categories" element={<Categories />} />
+            <Route path="brands" element={<Brands />} />
             <Route path="catalog" element={<Catalog />} />
             <Route path="products" element={<Navigate to="/admin/catalog" replace />} />
             <Route path="orders" element={<AdminOrders />} />
