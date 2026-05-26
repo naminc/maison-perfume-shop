@@ -103,16 +103,16 @@ export function BrandFormSheet({
           <fieldset className="space-y-3">
             <legend className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Thông tin cơ bản</legend>
             <Field error={errors.name?.message} label="Tên thương hiệu *" htmlFor="name">
-              <Input id="name" className="h-9 rounded-md bg-white" placeholder="Chanel" {...register("name")} />
+              <Input id="name" className="h-9" placeholder="Chanel" {...register("name")} />
             </Field>
             <Field error={errors.slug?.message} label="Slug" htmlFor="slug">
-              <Input id="slug" className="h-9 rounded-md bg-white" placeholder="chanel" {...register("slug")} />
+              <Input id="slug" className="h-9" placeholder="chanel" {...register("slug")} />
             </Field>
             <Field error={errors.description?.message} label="Mô tả" htmlFor="description">
               <Textarea
                 id="description"
                 rows={3}
-                className="rounded-md bg-white"
+                className=""
                 placeholder="Mô tả ngắn về thương hiệu"
                 {...register("description")}
               />
@@ -122,10 +122,10 @@ export function BrandFormSheet({
           <fieldset className="space-y-3">
             <legend className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Nhận diện</legend>
             <Field error={errors.logo?.message} label="Logo URL" htmlFor="logo">
-              <Input id="logo" className="h-9 rounded-md bg-white" placeholder="https://example.com/logo.png" {...register("logo")} />
+              <Input id="logo" className="h-9" placeholder="https://example.com/logo.png" {...register("logo")} />
             </Field>
             <Field error={errors.website?.message} label="Website" htmlFor="website">
-              <Input id="website" className="h-9 rounded-md bg-white" placeholder="https://example.com" {...register("website")} />
+              <Input id="website" className="h-9" placeholder="https://example.com" {...register("website")} />
             </Field>
           </fieldset>
 
@@ -160,7 +160,7 @@ export function BrandFormSheet({
                 id="sort_order"
                 type="number"
                 min={1}
-                className="h-9 rounded-md bg-white"
+                className="h-9"
                 placeholder="Tự động"
                 {...register("sort_order")}
               />

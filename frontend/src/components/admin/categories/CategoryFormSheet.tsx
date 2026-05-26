@@ -103,16 +103,16 @@ export function CategoryFormSheet({
           <fieldset className="space-y-3">
             <legend className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Thông tin cơ bản</legend>
             <Field error={errors.name?.message} label="Tên danh mục *" htmlFor="name">
-              <Input id="name" className="h-9 rounded-md bg-white" placeholder="Nước hoa nam" {...register("name")} />
+              <Input id="name" className="h-9" placeholder="Nước hoa nam" {...register("name")} />
             </Field>
             <Field error={errors.slug?.message} label="Slug" htmlFor="slug">
-              <Input id="slug" className="h-9 rounded-md bg-white" placeholder="nuoc-hoa-nam" {...register("slug")} />
+              <Input id="slug" className="h-9" placeholder="nuoc-hoa-nam" {...register("slug")} />
             </Field>
             <Field error={errors.description?.message} label="Mô tả" htmlFor="description">
               <Textarea
                 id="description"
                 rows={3}
-                className="rounded-md bg-white"
+                className=""
                 placeholder="Mô tả ngắn về danh mục"
                 {...register("description")}
               />
@@ -150,7 +150,7 @@ export function CategoryFormSheet({
                 id="sort_order"
                 type="number"
                 min={1}
-                className="h-9 rounded-md bg-white"
+                className="h-9"
                 placeholder="Tự động"
                 {...register("sort_order")}
               />
