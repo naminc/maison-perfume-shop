@@ -19,6 +19,23 @@ class SettingRepository implements SettingRepositoryInterface
             ->get();
     }
 
+    public function values(array $keys): array
+    {
+        return $this->model
+            ->newQuery()
+            ->whereIn('key', $keys)
+            ->pluck('value', 'key')
+            ->all();
+    }
+
+    public function findValue(string $key): ?string
+    {
+        return $this->model
+            ->newQuery()
+            ->where('key', $key)
+            ->value('value');
+    }
+
     public function updateValue(string $key, ?string $value, string $group): Setting
     {
         return $this->model->updateOrCreate(

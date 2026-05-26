@@ -27,6 +27,8 @@ class UpdateSettingsRequest extends FormRequest
             'instagram_url'    => ['nullable', 'string', 'url', 'max:255'],
             'meta_title'       => ['nullable', 'string', 'max:70'],
             'meta_description' => ['nullable', 'string', 'max:160'],
+            'maintenance_enabled' => ['nullable', 'boolean'],
+            'maintenance_message' => ['nullable', 'string', 'max:500'],
         ];
     }
 
@@ -39,6 +41,7 @@ class UpdateSettingsRequest extends FormRequest
             'contact_email.email'    => 'Email liên hệ không hợp lệ.',
             'phone.regex'           => 'Số điện thoại không hợp lệ.',
             '*.url'                  => 'Đường dẫn không hợp lệ.',
+            'maintenance_message.max' => 'Thông báo bảo trì không được vượt quá :max ký tự.',
         ];
     }
 
