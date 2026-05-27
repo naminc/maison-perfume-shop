@@ -1,0 +1,16 @@
+name: Deploy Backend via aaPanel
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gửi tín hiệu tới aaPanel Webhook
+        run: |
+          curl -X GET "${{ secrets.AAPANEL_WEBHOOK_URL }}"
