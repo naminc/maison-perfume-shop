@@ -15,6 +15,6 @@ Route::prefix('v1')->name('v1.')->group(function () {
     });
 });
 
-Route::fallback(function () {
-    return api_error('Không tìm thấy tài nguyên', 404);
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok']);
 });
