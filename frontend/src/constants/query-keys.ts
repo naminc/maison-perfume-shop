@@ -1,5 +1,6 @@
 const ADMIN_CATEGORIES_KEY = ['admin', 'categories'] as const;
 const ADMIN_BRANDS_KEY = ['admin', 'brands'] as const;
+const ADMIN_USERS_KEY = ['admin', 'users'] as const;
 
 export const QUERY_KEYS = {
   admin: {
@@ -13,6 +14,11 @@ export const QUERY_KEYS = {
       all: ADMIN_BRANDS_KEY,
       list:   (params: Record<string, unknown> = {}) => [...ADMIN_BRANDS_KEY, 'list', params] as const,
       detail: (id: number | string) => [...ADMIN_BRANDS_KEY, 'detail', id] as const,
+    },
+    users: {
+      all: ADMIN_USERS_KEY,
+      list:   (params: Record<string, unknown> = {}) => [...ADMIN_USERS_KEY, 'list', params] as const,
+      detail: (id: number | string) => [...ADMIN_USERS_KEY, 'detail', id] as const,
     },
   },
   account: {

@@ -28,6 +28,7 @@ const Brands = lazy(() => import("@/pages/admin/Brands"));
 const Catalog = lazy(() => import("@/pages/admin/Catalog"));
 const AdminOrders = lazy(() => import("@/pages/admin/Orders"));
 const Contacts = lazy(() => import("@/pages/admin/Contacts"));
+const Users = lazy(() => import("@/pages/admin/Users"));
 const Settings = lazy(() => import("@/pages/admin/Settings"));
 const AdminNotFound = lazy(() => import("@/pages/admin/AdminNotFound"));
 
@@ -99,6 +100,7 @@ export function AppRoutes() {
             <Route path="products" element={<Navigate to="/admin/catalog" replace />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="contacts" element={<Contacts />} />
+            <Route path="users" element={<Users />} />
             <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="/admin/*" element={<RequireAdmin><AdminNotFound /></RequireAdmin>} />
