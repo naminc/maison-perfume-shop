@@ -14,3 +14,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         require __DIR__ . '/v1/admin.php';
     });
 });
+
+Route::fallback(function () {
+    return api_error('Không tìm thấy tài nguyên.', 404);
+});
