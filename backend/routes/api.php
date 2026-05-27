@@ -16,5 +16,5 @@ Route::prefix('v1')->name('v1.')->group(function () {
 });
 
 Route::fallback(function () {
-    return api_error('Không tìm thấy tài nguyên', 404);
+    return api_error('Không tìm thấy tài nguyên.', 404);
 });
