@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Enums\BrandStatus;
 use App\Models\Brand;
 use App\Repositories\Interfaces\BrandRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -27,7 +28,7 @@ class BrandRepository implements BrandRepositoryInterface
                         ->orWhere('slug', 'like', "%{$search}%");
                 });
             })
-            ->when(! empty($filters['status']) && in_array($filters['status'], ['active', 'inactive'], true), function ($query) use ($filters) {
+            ->when(! empty($filters['status']) && in_array($filters['status'], BrandStatus::values(), true), function ($query) use ($filters) {
                 $query->where('status', $filters['status']);
             })
             ->orderBy('sort_order')

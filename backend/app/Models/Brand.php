@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BrandStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,11 +24,12 @@ class Brand extends Model
     ];
 
     protected $casts = [
+        'status'     => BrandStatus::class,
         'sort_order' => 'integer',
     ];
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 'active');
+        return $query->where('status', BrandStatus::Active->value);
     }
 }

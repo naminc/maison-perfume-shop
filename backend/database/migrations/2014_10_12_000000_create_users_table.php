@@ -20,8 +20,8 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('role', array_column(UserRole::cases(), 'value'))->default(UserRole::User->value);
-            $table->enum('status', array_column(UserStatus::cases(), 'value'))->default(UserStatus::Active->value);
+            $table->enum('role', UserRole::values())->default(UserRole::User->value);
+            $table->enum('status', UserStatus::values())->default(UserStatus::Active->value);
             $table->rememberToken();
             $table->timestamps();
         });

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CategoryStatus;
 use App\Models\Category;
 use App\Repositories\Interfaces\CategoryRepositoryInterface;
 use App\Services\Interfaces\CategoryServiceInterface;
@@ -101,7 +102,7 @@ class CategoryService extends BaseService implements CategoryServiceInterface
             'slug'        => $this->normalizeNullableString($data['slug'] ?? null),
             'description' => $this->normalizeNullableString($data['description'] ?? null),
             'parent_id'   => null,
-            'status'      => $data['status'] ?? 'active',
+            'status'      => $data['status'] ?? CategoryStatus::Active->value,
             'sort_order'  => $data['sort_order'] ?? null,
         ];
     }

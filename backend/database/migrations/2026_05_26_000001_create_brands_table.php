@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\BrandStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +16,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('logo')->nullable();
             $table->string('website')->nullable();
-            $table->enum('status', ['active', 'inactive'])->default('active')->index();
+            $table->enum('status', BrandStatus::values())->default(BrandStatus::Active->value)->index();
             $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
             $table->softDeletes();

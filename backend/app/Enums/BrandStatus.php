@@ -4,10 +4,10 @@ namespace App\Enums;
 
 use App\Enums\Concerns\HasEnumValues;
 
-enum UserRole: string
+enum BrandStatus: string
 {
     use HasEnumValues;
 
-    case User  = 'user';
-    case Admin = 'admin';
+    case Active = 'active';
+    case Inactive = 'inactive';
 }

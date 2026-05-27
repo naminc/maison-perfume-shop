@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Enums\CategoryStatus;
 use App\Models\Category;
 use App\Repositories\Interfaces\CategoryRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -28,7 +29,7 @@ class CategoryRepository implements CategoryRepositoryInterface
                         ->orWhere('slug', 'like', "%{$search}%");
                 });
             })
-            ->when(! empty($filters['status']) && in_array($filters['status'], ['active', 'inactive'], true), function ($query) use ($filters) {
+            ->when(! empty($filters['status']) && in_array($filters['status'], CategoryStatus::values(), true), function ($query) use ($filters) {
                 $query->where('status', $filters['status']);
             })
             ->when(array_key_exists('parent_id', $filters) && $filters['parent_id'] !== null && $filters['parent_id'] !== '', function ($query) use ($filters) {

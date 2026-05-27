@@ -22,7 +22,9 @@ use App\Services\Interfaces\AuthServiceInterface;
 use App\Services\Interfaces\BrandServiceInterface;
 use App\Services\Interfaces\CategoryServiceInterface;
 use App\Services\Interfaces\SettingServiceInterface;
+use App\Services\Interfaces\UserServiceInterface;
 use App\Services\SettingService;
+use App\Services\UserService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         SettingServiceInterface::class  => SettingService::class,
         CategoryServiceInterface::class => CategoryService::class,
         BrandServiceInterface::class    => BrandService::class,
+        UserServiceInterface::class     => UserService::class,
 
         // Repositories
         UserRepositoryInterface::class     => UserRepository::class,

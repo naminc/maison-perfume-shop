@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\BrandStatus;
 use App\Repositories\Interfaces\BrandRepositoryInterface;
 use App\Services\Interfaces\BrandServiceInterface;
 use Illuminate\Support\Str;
@@ -87,7 +88,7 @@ class BrandService extends BaseService implements BrandServiceInterface
             'description' => $this->normalizeNullableString($data['description'] ?? null),
             'logo'        => $this->normalizeNullableString($data['logo'] ?? null),
             'website'     => $this->normalizeNullableString($data['website'] ?? null),
-            'status'      => $data['status'] ?? 'active',
+            'status'      => $data['status'] ?? BrandStatus::Active->value,
             'sort_order'  => $data['sort_order'] ?? null,
         ];
     }

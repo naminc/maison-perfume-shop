@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Enums\CategoryStatus;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -21,7 +22,7 @@ class StoreCategoryRequest extends FormRequest
             'slug'        => ['nullable', 'string', 'max:255', Rule::unique('categories', 'slug')],
             'description' => ['nullable', 'string'],
             'parent_id'   => ['nullable', 'integer', Rule::exists('categories', 'id')->whereNull('deleted_at')],
-            'status'      => ['required', 'string', Rule::in(['active', 'inactive'])],
+            'status'      => ['required', 'string', Rule::in(CategoryStatus::values())],
             'sort_order'  => ['nullable', 'integer', 'min:1'],
         ];
     }

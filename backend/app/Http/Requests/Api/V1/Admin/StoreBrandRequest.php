@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Enums\BrandStatus;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -22,7 +23,7 @@ class StoreBrandRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'logo'        => ['nullable', 'string', 'url', 'max:255'],
             'website'     => ['nullable', 'string', 'url', 'max:255'],
-            'status'      => ['required', 'string', Rule::in(['active', 'inactive'])],
+            'status'      => ['required', 'string', Rule::in(BrandStatus::values())],
             'sort_order'  => ['nullable', 'integer', 'min:1'],
         ];
     }
