@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getPhoneHref } from "@/constants/site-settings";
 import { usePublicSettings } from "@/hooks/usePublicSettings";
+import { formatVietnamPhone } from "@/lib/phone";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Vui lòng nhập họ tên").max(100),
@@ -31,8 +32,12 @@ type ContactInfo = {
 
 export default function Contact() {
   const [loading, setLoading] = useState(false);
-  const { settings } = usePublicSettings();
-  const phoneHref = getPhoneHref(settings.phone);
+  const { settings: publicSettings } = usePublicSettings();
+  const phoneHref = getPhoneHref(publicSettings.phone);
+  const settings = {
+    ...publicSettings,
+    phone: formatVietnamPhone(publicSettings.phone),
+  };
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(schema) });
   const info = [
     settings.phone ? { icon: Phone, t: "Hotline", d: settings.phone, d2: "8:00 - 22:00 hàng ngày", href: phoneHref } : null,

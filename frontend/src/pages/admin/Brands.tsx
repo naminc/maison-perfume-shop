@@ -23,6 +23,7 @@ import { ButtonSpinner } from "@/components/shared/ButtonSpinner";
 import { BRAND_PAGE_SIZE, BRAND_STATUS_LABELS } from "@/constants/brand";
 import { useAdminBrands, useDeleteBrand } from "@/hooks/useAdminBrands";
 import { wasApiConnectionNotified } from "@/lib/api";
+import { formatDateTime } from "@/lib/date-time";
 import { exportExcel, type ExcelColumn } from "@/lib/export-excel";
 import type { ApiErrorResponse } from "@/types/auth";
 import type { Brand, BrandListParams, BrandListStatusFilter } from "@/types/brand";
@@ -336,20 +337,11 @@ const BRAND_EXPORT_COLUMNS: ExcelColumn<Brand>[] = [
     accessor: (brand) => brand.sort_order,
   },
   {
+    header: "Ngày tạo",
+    accessor: (brand) => formatDateTime(brand.created_at, ""),
+  },
+  {
     header: "Ngày cập nhật",
-    accessor: (brand) => formatDate(brand.updated_at),
+    accessor: (brand) => formatDateTime(brand.updated_at, ""),
   },
 ];
-
-function formatDate(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}

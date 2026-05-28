@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { Package, MapPin, CreditCard, Truck, Check, Phone, RotateCcw, Printer } from "lucide-react";
 import AccountLayout from "@/layouts/AccountLayout";
 import { perfumes } from "@/lib/demo/perfume-catalog";
+import { formatVietnamPhone } from "@/lib/phone";
 
 const formatVnd = (n: number) => n.toLocaleString("vi-VN") + "đ";
 
@@ -99,7 +100,7 @@ export default function OrderDetail() {
           <aside className="space-y-4">
             <InfoCard icon={<MapPin className="h-4 w-4" />} title="Địa chỉ nhận hàng">
               <p className="font-medium text-stone-900">{o.address.name}</p>
-              <p className="mt-0.5 flex items-center gap-1 text-xs text-stone-500"><Phone className="h-3 w-3" /> {o.address.phone}</p>
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-stone-500"><Phone className="h-3 w-3" /> {formatVietnamPhone(o.address.phone)}</p>
               <p className="mt-1.5">{o.address.line}</p>
             </InfoCard>
             <InfoCard icon={<Truck className="h-4 w-4" />} title="Vận chuyển">

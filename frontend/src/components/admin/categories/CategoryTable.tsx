@@ -15,6 +15,7 @@ import { TableSkeleton } from "@/components/shared/skeletons/TableSkeleton";
 import { CategoryRowActionsMenu } from "@/components/admin/categories/CategoryRowActionsMenu";
 import { CategoryStatusBadge } from "@/components/admin/categories/CategoryStatusBadge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatDateTime } from "@/lib/date-time";
 import type { Category, CategoryListResponse } from "@/types/category";
 
 interface CategoryTableProps {
@@ -79,7 +80,7 @@ export function CategoryTable({
   if (isLoading) {
     return (
       <div className="rounded-md border border-border bg-white p-4">
-        <TableSkeleton rows={6} columns={7} />
+        <TableSkeleton rows={6} columns={8} />
       </div>
     );
   }
@@ -153,6 +154,14 @@ export function CategoryTable({
                   <span className="text-muted-foreground">Thứ tự</span>
                   <span className="font-mono">{category.sort_order}</span>
                 </div>
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Ngày tạo</span>
+                  <span className="text-right text-muted-foreground">{formatDateTime(category.created_at)}</span>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Ngày cập nhật</span>
+                  <span className="text-right text-muted-foreground">{formatDateTime(category.updated_at)}</span>
+                </div>
                 <div className="flex justify-end pt-1">
                   <CategoryRowActionsMenu category={category} onEdit={onEdit} onDelete={onDelete} />
                 </div>
@@ -168,14 +177,15 @@ export function CategoryTable({
   return (
     <div>
       <div className="overflow-x-auto rounded-md border border-border bg-white">
-        <Table className="min-w-[1024px] table-fixed">
+        <Table className="min-w-[1180px] table-fixed">
           <colgroup>
             <col className="w-12" />
             <col className="w-16" />
-            <col className="w-[28%]" />
-            <col className="w-[26%]" />
+            <col className="w-[24%]" />
+            <col className="w-[22%]" />
             <col className="w-36" />
             <col className="w-24" />
+            <col className="w-40" />
             <col className="w-40" />
             <col className="w-12" />
           </colgroup>
@@ -193,6 +203,7 @@ export function CategoryTable({
               <TableHead>Slug</TableHead>
               <TableHead>Trạng thái</TableHead>
               <TableHead className="text-center">Thứ tự</TableHead>
+              <TableHead>Ngày tạo</TableHead>
               <TableHead>Ngày cập nhật</TableHead>
               <TableHead />
             </TableRow>
@@ -223,7 +234,8 @@ export function CategoryTable({
                   <CategoryStatusBadge status={category.status} />
                 </TableCell>
                 <TableCell className="text-center font-mono text-sm">{category.sort_order}</TableCell>
-                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDate(category.updated_at)}</TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDateTime(category.created_at)}</TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDateTime(category.updated_at)}</TableCell>
                 <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                   <CategoryRowActionsMenu category={category} onEdit={onEdit} onDelete={onDelete} />
                 </TableCell>
@@ -239,16 +251,3 @@ export function CategoryTable({
 
 const EMPTY_SELECTED_IDS = new Set<number>();
 const noopSelectionChange = () => {};
-
-function formatDate(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}

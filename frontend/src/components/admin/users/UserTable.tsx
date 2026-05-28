@@ -16,6 +16,8 @@ import { UserRoleBadge } from "@/components/admin/users/UserRoleBadge";
 import { UserRowActionsMenu } from "@/components/admin/users/UserRowActionsMenu";
 import { UserStatusBadge } from "@/components/admin/users/UserStatusBadge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatDateTime } from "@/lib/date-time";
+import { formatVietnamPhone } from "@/lib/phone";
 import type { AdminUser, AdminUserListResponse } from "@/types/admin/user";
 
 interface UserTableProps {
@@ -160,7 +162,7 @@ export function UserTable({
                   </div>
                   <div className="flex justify-between gap-3">
                     <span className="text-muted-foreground">Số điện thoại</span>
-                    <span>{user.phone || "-"}</span>
+                    <span>{formatVietnamPhone(user.phone) || "-"}</span>
                   </div>
                   <div className="flex justify-end pt-1">
                     <UserRowActionsMenu
@@ -243,15 +245,15 @@ export function UserTable({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{user.phone || "-"}</TableCell>
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatVietnamPhone(user.phone) || "-"}</TableCell>
                   <TableCell className="whitespace-nowrap">
                     <UserRoleBadge role={user.role} />
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     <UserStatusBadge status={user.status} />
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDate(user.created_at)}</TableCell>
-                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDate(user.updated_at)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDateTime(user.created_at)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDateTime(user.updated_at)}</TableCell>
                   <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                     <UserRowActionsMenu
                       user={user}
@@ -288,17 +290,4 @@ function getInitials(value: string) {
   const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : "";
 
   return `${first}${last}`.toUpperCase() || "U";
-}
-
-function formatDate(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
 }

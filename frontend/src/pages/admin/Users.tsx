@@ -24,7 +24,9 @@ import { USER_PAGE_SIZE, USER_ROLE_LABELS, USER_STATUS_LABELS } from "@/constant
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminUsers, useDeleteUser } from "@/hooks/useAdminUsers";
 import { wasApiConnectionNotified } from "@/lib/api";
+import { formatDateTime } from "@/lib/date-time";
 import { exportExcel, type ExcelColumn } from "@/lib/export-excel";
+import { formatVietnamPhone } from "@/lib/phone";
 import type { ApiErrorResponse } from "@/types/auth";
 import type {
   AdminUser,
@@ -319,7 +321,7 @@ const USER_EXPORT_COLUMNS: ExcelColumn<AdminUser>[] = [
   },
   {
     header: "Số điện thoại",
-    accessor: (user) => user.phone,
+    accessor: (user) => formatVietnamPhone(user.phone),
   },
   {
     header: "Vai trò",
@@ -331,23 +333,10 @@ const USER_EXPORT_COLUMNS: ExcelColumn<AdminUser>[] = [
   },
   {
     header: "Ngày tạo",
-    accessor: (user) => formatDate(user.created_at),
+    accessor: (user) => formatDateTime(user.created_at, ""),
   },
   {
     header: "Ngày cập nhật",
-    accessor: (user) => formatDate(user.updated_at),
+    accessor: (user) => formatDateTime(user.updated_at, ""),
   },
 ];
-
-function formatDate(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}

@@ -1,3 +1,5 @@
+import { formatDateTime } from "@/lib/date-time";
+
 export type ExcelCellValue = string | number | boolean | Date | null | undefined;
 
 export interface ExcelColumn<T> {
@@ -41,10 +43,7 @@ export async function exportExcel<T>({
 
   worksheet.mergeCells(2, 1, 2, columns.length);
   const subtitleCell = worksheet.getCell(2, 1);
-  subtitleCell.value = `Xuất lúc ${new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date())}`;
+  subtitleCell.value = `Xuất lúc ${formatDateTime(new Date(), "")}`;
   subtitleCell.font = { ...EXCEL_FONT, size: 10, color: { argb: "FF6B7280" } };
 
   worksheet.addRow([]);

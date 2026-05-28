@@ -2,10 +2,12 @@ import { Link } from "react-router-dom";
 import { Mail, Phone } from "lucide-react";
 import { getPhoneHref } from "@/constants/site-settings";
 import { usePublicSettings } from "@/hooks/usePublicSettings";
+import { formatVietnamPhone } from "@/lib/phone";
 
 export default function SiteFooter() {
   const { settings } = usePublicSettings();
   const phoneHref = getPhoneHref(settings.phone);
+  const displayedPhone = formatVietnamPhone(settings.phone);
 
   return (
     <footer id="contact" className="bg-stone-900 text-stone-300">
@@ -40,7 +42,7 @@ export default function SiteFooter() {
             {settings.phone && (
               <li>
                 <a href={phoneHref} className="flex items-center gap-2 hover:text-white">
-                  <Phone className="h-4 w-4" /> {settings.phone}
+                  <Phone className="h-4 w-4" /> {displayedPhone}
                 </a>
               </li>
             )}

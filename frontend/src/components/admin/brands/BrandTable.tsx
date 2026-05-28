@@ -15,6 +15,7 @@ import { TableSkeleton } from "@/components/shared/skeletons/TableSkeleton";
 import { BrandRowActionsMenu } from "@/components/admin/brands/BrandRowActionsMenu";
 import { BrandStatusBadge } from "@/components/admin/brands/BrandStatusBadge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatDateTime } from "@/lib/date-time";
 import type { Brand, BrandListResponse } from "@/types/brand";
 
 interface BrandTableProps {
@@ -79,7 +80,7 @@ export function BrandTable({
   if (isLoading) {
     return (
       <div className="rounded-md border border-border bg-white p-4">
-        <TableSkeleton rows={6} columns={9} />
+        <TableSkeleton rows={6} columns={10} />
       </div>
     );
   }
@@ -167,6 +168,14 @@ export function BrandTable({
                   <span className="text-muted-foreground">Thứ tự</span>
                   <span className="font-mono">{brand.sort_order}</span>
                 </div>
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Ngày tạo</span>
+                  <span className="text-right text-muted-foreground">{formatDateTime(brand.created_at)}</span>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Ngày cập nhật</span>
+                  <span className="text-right text-muted-foreground">{formatDateTime(brand.updated_at)}</span>
+                </div>
                 <div className="flex justify-end pt-1">
                   <BrandRowActionsMenu brand={brand} onEdit={onEdit} onDelete={onDelete} />
                 </div>
@@ -182,16 +191,17 @@ export function BrandTable({
   return (
     <div>
       <div className="overflow-x-auto rounded-md border border-border bg-white">
-        <Table className="min-w-[1200px] table-fixed">
+        <Table className="min-w-[1360px] table-fixed">
           <colgroup>
             <col className="w-12" />
             <col className="w-16" />
             <col className="w-20" />
-            <col className="w-[22%]" />
-            <col className="w-[18%]" />
             <col className="w-[20%]" />
+            <col className="w-[16%]" />
+            <col className="w-[18%]" />
             <col className="w-36" />
             <col className="w-24" />
+            <col className="w-40" />
             <col className="w-40" />
             <col className="w-12" />
           </colgroup>
@@ -211,6 +221,7 @@ export function BrandTable({
               <TableHead>Website</TableHead>
               <TableHead>Trạng thái</TableHead>
               <TableHead className="text-center">Thứ tự</TableHead>
+              <TableHead>Ngày tạo</TableHead>
               <TableHead>Ngày cập nhật</TableHead>
               <TableHead />
             </TableRow>
@@ -259,7 +270,8 @@ export function BrandTable({
                   <BrandStatusBadge status={brand.status} />
                 </TableCell>
                 <TableCell className="text-center font-mono text-sm">{brand.sort_order}</TableCell>
-                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDate(brand.updated_at)}</TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDateTime(brand.created_at)}</TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDateTime(brand.updated_at)}</TableCell>
                 <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                   <BrandRowActionsMenu brand={brand} onEdit={onEdit} onDelete={onDelete} />
                 </TableCell>
@@ -292,17 +304,4 @@ function BrandLogo({ brand }: { brand: Brand }) {
       {brand.name.charAt(0).toUpperCase()}
     </div>
   );
-}
-
-function formatDate(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
 }

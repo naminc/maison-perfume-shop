@@ -23,6 +23,7 @@ import { ButtonSpinner } from "@/components/shared/ButtonSpinner";
 import { CATEGORY_PAGE_SIZE, CATEGORY_STATUS_LABELS } from "@/constants/category";
 import { useAdminCategories, useDeleteCategory } from "@/hooks/useAdminCategories";
 import { wasApiConnectionNotified } from "@/lib/api";
+import { formatDateTime } from "@/lib/date-time";
 import { exportExcel, type ExcelColumn } from "@/lib/export-excel";
 import type { ApiErrorResponse } from "@/types/auth";
 import type { Category, CategoryListParams, CategoryListStatusFilter } from "@/types/category";
@@ -332,20 +333,11 @@ const CATEGORY_EXPORT_COLUMNS: ExcelColumn<Category>[] = [
     accessor: (category) => category.sort_order,
   },
   {
+    header: "Ngày tạo",
+    accessor: (category) => formatDateTime(category.created_at, ""),
+  },
+  {
     header: "Ngày cập nhật",
-    accessor: (category) => formatDate(category.updated_at),
+    accessor: (category) => formatDateTime(category.updated_at, ""),
   },
 ];
-
-function formatDate(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}

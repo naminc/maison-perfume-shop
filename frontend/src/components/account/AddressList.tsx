@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ButtonSpinner } from "@/components/shared/ButtonSpinner";
 import { useDeleteAddress, useSetDefaultAddress } from "@/hooks/useAddressQueries";
 import { ADDRESS_PAGE_SIZE, ADDRESS_TYPE_LABELS } from "@/constants/address";
+import { formatVietnamPhone } from "@/lib/phone";
 import type { UserAddress } from "@/types/address";
 
 interface Props {
@@ -124,7 +125,7 @@ export function AddressList({ addresses, isLoading, onEdit }: Props) {
           </div>
 
           <p className="font-semibold">{a.receiver_name}</p>
-          <p className="text-sm text-stone-500">{a.receiver_phone}</p>
+          <p className="text-sm text-stone-500">{formatVietnamPhone(a.receiver_phone)}</p>
           <p className="mt-2 text-sm text-stone-700">{a.specific_address}</p>
           <p className="text-sm text-stone-500">{formatAddressArea(a)}</p>
 

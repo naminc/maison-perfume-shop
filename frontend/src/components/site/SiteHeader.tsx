@@ -6,6 +6,7 @@ import { useStorefront } from "@/hooks/useStorefront";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBrandParts, getPhoneHref } from "@/constants/site-settings";
 import { usePublicSettings } from "@/hooks/usePublicSettings";
+import { formatVietnamPhone } from "@/lib/phone";
 
 const PRODUCT_MENU: { label: string; to: string }[] = [
   { label: "Nước hoa Nam", to: "/category/nam" },
@@ -28,6 +29,7 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
   const { settings } = usePublicSettings();
   const brand = getBrandParts(settings.store_name);
   const phoneHref = getPhoneHref(settings.phone);
+  const displayedPhone = formatVietnamPhone(settings.phone);
   const displayedCartCount = cartCount ?? storefront.cartCount;
   const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -66,7 +68,7 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
           <div className="flex items-center gap-4">
             {settings.phone && (
               <a href={phoneHref} className="flex items-center gap-1.5 hover:text-white">
-                <Phone className="h-3 w-3" /> {settings.phone}
+                <Phone className="h-3 w-3" /> {displayedPhone}
               </a>
             )}
             {settings.contact_email && (
