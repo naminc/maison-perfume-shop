@@ -20,7 +20,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: "Bảng điều khiển", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Danh mục", href: "/admin/categories", icon: Tags },
   { label: "Thương hiệu", href: "/admin/brands", icon: BadgeCheck },
-  { label: "Sản phẩm", href: "/admin/catalog", icon: Package },
+  { label: "Sản phẩm", href: "/admin/products", icon: Package },
   { label: "Đơn hàng", href: "/admin/orders", icon: ShoppingCart },
   { label: "Liên hệ", href: "/admin/contacts", icon: Mail },
   { label: "Người dùng", href: "/admin/users", icon: Users },
