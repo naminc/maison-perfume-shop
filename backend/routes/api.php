@@ -7,6 +7,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
     require __DIR__ . '/v1/geo.php';
     require __DIR__ . '/v1/categories.php';
     require __DIR__ . '/v1/brands.php';
+    require __DIR__ . '/v1/products.php';
     require __DIR__ . '/v1/settings.php';
 
     Route::middleware('auth:sanctum')->group(function () {

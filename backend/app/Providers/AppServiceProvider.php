@@ -9,8 +9,10 @@ use App\Repositories\CategoryRepository;
 use App\Repositories\Interfaces\AddressRepositoryInterface;
 use App\Repositories\Interfaces\BrandRepositoryInterface;
 use App\Repositories\Interfaces\CategoryRepositoryInterface;
+use App\Repositories\Interfaces\ProductRepositoryInterface;
 use App\Repositories\Interfaces\SettingRepositoryInterface;
 use App\Repositories\Interfaces\UserRepositoryInterface;
+use App\Repositories\ProductRepository;
 use App\Repositories\SettingRepository;
 use App\Repositories\UserRepository;
 use App\Services\AddressService;
@@ -21,8 +23,10 @@ use App\Services\Interfaces\AddressServiceInterface;
 use App\Services\Interfaces\AuthServiceInterface;
 use App\Services\Interfaces\BrandServiceInterface;
 use App\Services\Interfaces\CategoryServiceInterface;
+use App\Services\Interfaces\ProductServiceInterface;
 use App\Services\Interfaces\SettingServiceInterface;
 use App\Services\Interfaces\UserServiceInterface;
+use App\Services\ProductService;
 use App\Services\SettingService;
 use App\Services\UserService;
 
@@ -36,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
         SettingServiceInterface::class  => SettingService::class,
         CategoryServiceInterface::class => CategoryService::class,
         BrandServiceInterface::class    => BrandService::class,
+        ProductServiceInterface::class  => ProductService::class,
         UserServiceInterface::class     => UserService::class,
 
         // Repositories
@@ -44,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         SettingRepositoryInterface::class  => SettingRepository::class,
         CategoryRepositoryInterface::class => CategoryRepository::class,
         BrandRepositoryInterface::class    => BrandRepository::class,
+        ProductRepositoryInterface::class  => ProductRepository::class,
     ];
     /**
      * Register any application services.
