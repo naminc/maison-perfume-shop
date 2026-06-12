@@ -18,6 +18,7 @@ import { addressSchema, type AddressFormValues } from "@/schemas/address";
 import { useCreateAddress, useUpdateAddress } from "@/hooks/useAddressQueries";
 import { useProvinces, useWards } from "@/hooks/useGeoQueries";
 import { ADDRESS_TYPE_OPTIONS } from "@/constants/address";
+import { formatWardDisplayName } from "@/lib/address-format";
 import { applyApiErrors } from "@/lib/form-utils";
 import type { ApiErrorResponse } from "@/types/auth";
 import type { UserAddress } from "@/types/address";
@@ -38,13 +39,6 @@ const DEFAULTS: AddressFormValues = {
   specific_address: "",
   address_type: "home",
   is_default: false,
-};
-
-const getWardDisplayName = (wardFullName: string, provinceName: string) => {
-  const suffix = `, ${provinceName}`;
-  return provinceName && wardFullName.endsWith(suffix)
-    ? wardFullName.slice(0, -suffix.length)
-    : wardFullName;
 };
 
 export function AddressFormModal({ open, onOpenChange, editing }: Props) {
@@ -96,7 +90,7 @@ export function AddressFormModal({ open, onOpenChange, editing }: Props) {
     const ward = wards.find((w) => w.code === code);
     const province = provinces.find((p) => p.code === selectedProvinceCode);
     setValue("ward_code", code);
-    setValue("ward_name", ward ? getWardDisplayName(ward.full_name, province?.full_name ?? "") : "");
+    setValue("ward_name", ward ? formatWardDisplayName(ward.full_name, province?.full_name) : "");
   };
 
   const onSubmit = (data: AddressFormValues) => {

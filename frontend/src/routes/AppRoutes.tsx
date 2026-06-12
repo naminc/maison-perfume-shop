@@ -62,7 +62,7 @@ export function AppRoutes() {
           <Route path="/product/:slug" element={<ProductDetail />} />
           <Route path="/search" element={<Search />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
           <Route path="/checkout/success" element={<CheckoutSuccess />} />
 
           <Route path="/account" element={<RequireAuth><AccountOverview /></RequireAuth>} />

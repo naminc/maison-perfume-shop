@@ -1,113 +1,130 @@
 import { Link, useParams } from "react-router-dom";
-import { Package, MapPin, CreditCard, Truck, Check, Phone, RotateCcw, Printer } from "lucide-react";
+import { Check, CreditCard, MapPin, Package, Phone, Printer, RotateCcw, Truck } from "lucide-react";
 import AccountLayout from "@/layouts/AccountLayout";
-import { perfumes } from "@/lib/demo/perfume-catalog";
+import { Button } from "@/components/ui/button";
+import {
+  ORDER_STATUS_BADGE_CLASS,
+  ORDER_STATUS_LABELS,
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_STATUS_BADGE_CLASS,
+  PAYMENT_STATUS_LABELS,
+} from "@/constants/order";
+import { useMyOrder } from "@/hooks/useOrders";
+import { formatAddressParts } from "@/lib/address-format";
+import { formatDateTime } from "@/lib/date-time";
 import { formatVietnamPhone } from "@/lib/phone";
+import { formatVnd } from "@/lib/product-utils";
+import type { Order, OrderStatus } from "@/types/order";
 
-const formatVnd = (n: number) => n.toLocaleString("vi-VN") + "đ";
-
-// Demo data — in real app fetch by id
-const DEMO = {
-  id: "MS1024",
-  date: "20/05/2026 14:32",
-  status: "shipping" as const,
-  items: [
-    { name: "Chanel Bleu de Chanel 100ml", image: perfumes[1].image, qty: 1, price: 3290000, variant: "Full 100ml" },
-    { name: "Dior Sauvage EDP 100ml", image: perfumes[0].image, qty: 1, price: 2890000, variant: "Full 100ml" },
-  ],
-  subtotal: 6180000,
-  shipping: 30000,
-  discount: 0,
-  total: 6210000,
-  address: {
-    name: "Nguyễn Văn A",
-    phone: "0987 654 321",
-    line: "123 Nguyễn Huệ, P. Bến Nghé, Quận 1, TP. HCM",
-  },
-  payment: "Thanh toán khi nhận hàng (COD)",
-  shipMethod: "Giao tiêu chuẩn 2-4 ngày",
-};
-
-const STEPS = [
-  { id: "pending", label: "Đã đặt hàng", date: "20/05 14:32" },
-  { id: "confirmed", label: "Xác nhận", date: "20/05 15:10" },
-  { id: "shipping", label: "Đang giao", date: "21/05 09:20" },
-  { id: "completed", label: "Hoàn thành", date: "" },
+const TRACKER_STEPS: Array<{ id: OrderStatus; label: string }> = [
+  { id: "pending", label: "Đã đặt hàng" },
+  { id: "confirmed", label: "Xác nhận" },
+  { id: "shipping", label: "Đang giao" },
+  { id: "completed", label: "Hoàn thành" },
 ];
 
+const STEP_INDEX: Partial<Record<OrderStatus, number>> = {
+  pending: 0,
+  confirmed: 1,
+  processing: 1,
+  shipping: 2,
+  completed: 3,
+};
+
 export default function OrderDetail() {
-  const { id = DEMO.id } = useParams();
-  const currentIdx = 2; // shipping
-  const o = { ...DEMO, id };
+  const { id } = useParams();
+  const orderQuery = useMyOrder(id);
+  const order = orderQuery.data;
+
+  if (orderQuery.isLoading) {
+    return (
+      <AccountLayout title="Đơn hàng" subtitle="Đang tải chi tiết đơn hàng.">
+        <div className="space-y-5">
+          <div className="h-36 animate-pulse rounded-xl border border-stone-200 bg-white" />
+          <div className="h-80 animate-pulse rounded-xl border border-stone-200 bg-white" />
+        </div>
+      </AccountLayout>
+    );
+  }
+
+  if (orderQuery.isError || !order) {
+    return (
+      <AccountLayout title="Không tìm thấy đơn hàng" subtitle="Đơn hàng không tồn tại hoặc không thuộc tài khoản của bạn.">
+        <div className="rounded-xl border border-stone-200 bg-white py-16 text-center">
+          <Package className="mx-auto h-10 w-10 text-stone-300" strokeWidth={1.5} />
+          <h2 className="mt-3 text-lg font-medium text-stone-900">Không thể tải đơn hàng</h2>
+          <Button asChild className="mt-5 bg-stone-900 text-white hover:bg-stone-800">
+            <Link to="/account/orders">Quay lại danh sách</Link>
+          </Button>
+        </div>
+      </AccountLayout>
+    );
+  }
 
   return (
-    <AccountLayout title={`Đơn hàng #${o.id}`} subtitle={`Đặt ngày ${o.date}`}>
+    <AccountLayout title={`Đơn hàng #${order.order_code}`} subtitle={`Đặt ngày ${formatDateTime(order.created_at)}`}>
       <div className="space-y-5">
-        {/* Tracker */}
-        <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
-          <h2 className="mb-5 text-sm font-semibold text-stone-700">Tình trạng đơn hàng</h2>
-          <ol className="grid gap-4 sm:grid-cols-4">
-            {STEPS.map((s, i) => {
-              const done = i <= currentIdx;
-              const active = i === currentIdx;
-              return (
-                <li key={s.id} className="relative flex items-start gap-3 sm:flex-col sm:items-center sm:text-center">
-                  <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 ${done ? "border-emerald-600 bg-emerald-600 text-white" : "border-stone-300 bg-white text-stone-400"}`}>
-                    {done ? <Check className="h-4 w-4" /> : <span className="text-xs font-semibold">{i + 1}</span>}
-                  </div>
-                  <div className="min-w-0">
-                    <div className={`text-sm font-medium ${active ? "text-emerald-700" : done ? "text-stone-900" : "text-stone-500"}`}>{s.label}</div>
-                    {s.date && <div className="mt-0.5 text-xs text-stone-500">{s.date}</div>}
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </section>
+        <OrderTracker order={order} />
 
         <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-          {/* Items */}
           <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-sm font-semibold"><Package className="h-4 w-4" /> Sản phẩm ({o.items.length})</h2>
-              <button className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-900"><Printer className="h-3.5 w-3.5" /> In đơn</button>
+              <h2 className="flex items-center gap-2 text-sm font-semibold">
+                <Package className="h-4 w-4" /> Sản phẩm ({order.items?.length ?? 0})
+              </h2>
+              <button className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-900">
+                <Printer className="h-3.5 w-3.5" /> In đơn
+              </button>
             </div>
+
             <ul className="divide-y divide-stone-100">
-              {o.items.map((it, i) => (
-                <li key={i} className="flex gap-4 py-3 first:pt-0 last:pb-0">
-                  <img src={it.image} alt={it.name} className="h-16 w-16 rounded-lg object-cover" />
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-medium">{it.name}</p>
-                    <p className="text-xs text-stone-500">{it.variant} × {it.qty}</p>
+              {(order.items ?? []).map((item) => (
+                <li key={item.id} className="flex gap-4 py-3 first:pt-0 last:pb-0">
+                  {item.product_image ? (
+                    <img src={item.product_image} alt={item.product_name} className="h-16 w-16 rounded-lg object-cover" />
+                  ) : (
+                    <div className="grid h-16 w-16 place-items-center rounded-lg bg-stone-100 text-stone-400">
+                      <Package className="h-5 w-5" strokeWidth={1.5} />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{item.product_name}</p>
+                    <p className="text-xs text-stone-500">
+                      {[item.concentration, item.volume_ml ? `${item.volume_ml}ml` : null, item.brand_name].filter(Boolean).join(" · ")} × {item.quantity}
+                    </p>
                   </div>
-                  <div className="text-sm font-semibold whitespace-nowrap">{formatVnd(it.price * it.qty)}</div>
+                  <div className="whitespace-nowrap text-sm font-semibold">{formatVnd(item.line_total)}</div>
                 </li>
               ))}
             </ul>
 
             <dl className="mt-5 space-y-2 border-t border-stone-200 pt-4 text-sm">
-              <Row label="Tạm tính" value={formatVnd(o.subtotal)} />
-              <Row label="Vận chuyển" value={formatVnd(o.shipping)} />
-              {o.discount > 0 && <Row label="Giảm giá" value={`-${formatVnd(o.discount)}`} accent />}
+              <Row label="Tạm tính" value={formatVnd(order.subtotal)} />
+              <Row label="Vận chuyển" value={Number(order.shipping_fee) === 0 ? "Miễn phí" : formatVnd(order.shipping_fee)} />
+              {Number(order.discount_total) > 0 && <Row label="Giảm giá" value={`-${formatVnd(order.discount_total)}`} accent />}
               <div className="flex justify-between border-t border-stone-200 pt-2 text-base font-semibold">
                 <dt>Tổng cộng</dt>
-                <dd className="text-amber-700">{formatVnd(o.total)}</dd>
+                <dd className="text-amber-700">{formatVnd(order.total)}</dd>
               </div>
             </dl>
           </section>
 
-          {/* Sidebar */}
           <aside className="space-y-4">
             <InfoCard icon={<MapPin className="h-4 w-4" />} title="Địa chỉ nhận hàng">
-              <p className="font-medium text-stone-900">{o.address.name}</p>
-              <p className="mt-0.5 flex items-center gap-1 text-xs text-stone-500"><Phone className="h-3 w-3" /> {formatVietnamPhone(o.address.phone)}</p>
-              <p className="mt-1.5">{o.address.line}</p>
+              <p className="font-medium text-stone-900">{order.customer_name}</p>
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-stone-500">
+                <Phone className="h-3 w-3" /> {formatVietnamPhone(order.customer_phone)}
+              </p>
+              <p className="mt-1.5">{formatShippingAddress(order)}</p>
             </InfoCard>
             <InfoCard icon={<Truck className="h-4 w-4" />} title="Vận chuyển">
-              <p>{o.shipMethod}</p>
+              <p>{Number(order.shipping_fee) === 0 ? "Miễn phí vận chuyển" : formatVnd(order.shipping_fee)}</p>
             </InfoCard>
             <InfoCard icon={<CreditCard className="h-4 w-4" />} title="Thanh toán">
-              <p>{o.payment}</p>
+              <p>{PAYMENT_METHOD_LABELS[order.payment_method]}</p>
+              <p className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${PAYMENT_STATUS_BADGE_CLASS[order.payment_status]}`}>
+                {PAYMENT_STATUS_LABELS[order.payment_status]}
+              </p>
             </InfoCard>
 
             <div className="flex flex-col gap-2">
@@ -123,6 +140,58 @@ export default function OrderDetail() {
       </div>
     </AccountLayout>
   );
+}
+
+function OrderTracker({ order }: { order: Order }) {
+  if (order.status === "cancelled") {
+    return (
+      <section className="rounded-xl border border-red-100 bg-red-50 p-5 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-red-800">Đơn hàng đã huỷ</h2>
+            <p className="mt-1 text-xs text-red-700">{order.cancelled_at ? formatDateTime(order.cancelled_at) : "Kho đã được hoàn lại sau khi huỷ."}</p>
+          </div>
+          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ORDER_STATUS_BADGE_CLASS.cancelled}`}>
+            {ORDER_STATUS_LABELS.cancelled}
+          </span>
+        </div>
+      </section>
+    );
+  }
+
+  const currentIdx = STEP_INDEX[order.status] ?? 0;
+
+  return (
+    <section className="rounded-xl border border-stone-200 bg-white p-5 sm:p-6">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-stone-700">Tình trạng đơn hàng</h2>
+        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ORDER_STATUS_BADGE_CLASS[order.status]}`}>
+          {ORDER_STATUS_LABELS[order.status]}
+        </span>
+      </div>
+      <ol className="grid gap-4 sm:grid-cols-4">
+        {TRACKER_STEPS.map((step, index) => {
+          const done = index <= currentIdx;
+          const active = index === currentIdx;
+
+          return (
+            <li key={step.id} className="relative flex items-start gap-3 sm:flex-col sm:items-center sm:text-center">
+              <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 ${done ? "border-emerald-600 bg-emerald-600 text-white" : "border-stone-300 bg-white text-stone-400"}`}>
+                {done ? <Check className="h-4 w-4" /> : <span className="text-xs font-semibold">{index + 1}</span>}
+              </div>
+              <div className="min-w-0">
+                <div className={`text-sm font-medium ${active ? "text-emerald-700" : done ? "text-stone-900" : "text-stone-500"}`}>{step.label}</div>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+function formatShippingAddress(order: Order) {
+  return formatAddressParts([order.shipping_address, order.ward_name, order.province_name]);
 }
 
 function Row({ label, value, accent }: { label: string; value: string; accent?: boolean }) {

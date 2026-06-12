@@ -1,15 +1,22 @@
-import { useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { CheckCircle2, Package, Mail } from "lucide-react";
+import { CheckCircle2, Mail, Package } from "lucide-react";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
+import { useAuth } from "@/contexts/AuthContext";
 import { formatVnd } from "@/lib/product-utils";
 
+interface CheckoutSuccessState {
+  orderCode?: string;
+  orderId?: string;
+  total?: number;
+  email?: string | null;
+}
+
 export default function CheckoutSuccess() {
-  const { state } = useLocation() as { state?: { orderId?: string; total?: number; email?: string } };
-  const fallbackOrderId = useMemo(() => "MS" + Math.floor(1000 + Math.random() * 9000), []);
-  const orderId = state?.orderId ?? fallbackOrderId;
-  const email = state?.email ?? "ban@email.com";
+  const { state } = useLocation() as { state?: CheckoutSuccessState };
+  const { user } = useAuth();
+  const orderCode = state?.orderCode ?? state?.orderId;
+  const email = state?.email;
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans text-stone-900" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
@@ -26,26 +33,32 @@ export default function CheckoutSuccess() {
           </p>
 
           <div className="mt-6 rounded-xl bg-stone-50 p-5 text-left">
-            <div className="flex items-center justify-between text-sm">
-              <div className="text-stone-500">Mã đơn hàng</div>
-              <div className="font-semibold text-stone-900">#{orderId}</div>
-            </div>
+            {orderCode && (
+              <div className="flex items-center justify-between text-sm">
+                <div className="text-stone-500">Mã đơn hàng</div>
+                <div className="font-semibold text-stone-900">#{orderCode}</div>
+              </div>
+            )}
             {typeof state?.total === "number" && (
               <div className="mt-3 flex items-center justify-between text-sm">
                 <div className="text-stone-500">Tổng thanh toán</div>
                 <div className="font-semibold text-stone-900">{formatVnd(state.total)}</div>
               </div>
             )}
-            <div className="mt-3 flex items-center gap-2 text-xs text-stone-500">
-              <Mail className="h-3.5 w-3.5" />
-              Email xác nhận đã được gửi tới <span className="font-medium text-stone-700">{email}</span>
-            </div>
+            {email && (
+              <div className="mt-3 flex items-center gap-2 text-xs text-stone-500">
+                <Mail className="h-3.5 w-3.5" />
+                Email xác nhận sẽ được gửi tới <span className="font-medium text-stone-700">{email}</span>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-            <Link to={`/account/orders/${orderId}`} className="inline-flex items-center justify-center gap-2 rounded-lg bg-stone-900 px-6 py-3 text-sm font-semibold text-white hover:bg-stone-800">
-              <Package className="h-4 w-4" /> Xem chi tiết đơn
-            </Link>
+            {user && orderCode && (
+              <Link to={`/account/orders/${orderCode}`} className="inline-flex items-center justify-center gap-2 rounded-lg bg-stone-900 px-6 py-3 text-sm font-semibold text-white hover:bg-stone-800">
+                <Package className="h-4 w-4" /> Xem chi tiết đơn
+              </Link>
+            )}
             <Link to="/shop" className="inline-flex items-center justify-center rounded-lg border border-stone-300 px-6 py-3 text-sm font-semibold text-stone-700 hover:bg-stone-50">
               Tiếp tục mua sắm
             </Link>

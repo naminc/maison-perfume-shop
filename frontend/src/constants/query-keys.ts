@@ -1,7 +1,9 @@
 const ADMIN_CATEGORIES_KEY = ['admin', 'categories'] as const;
 const ADMIN_BRANDS_KEY = ['admin', 'brands'] as const;
 const ADMIN_PRODUCTS_KEY = ['admin', 'products'] as const;
+const ADMIN_ORDERS_KEY = ['admin', 'orders'] as const;
 const ADMIN_USERS_KEY = ['admin', 'users'] as const;
+const ACCOUNT_ORDERS_KEY = ['account', 'orders'] as const;
 const PRODUCTS_KEY = ['products'] as const;
 
 export const QUERY_KEYS = {
@@ -22,6 +24,11 @@ export const QUERY_KEYS = {
       list:   (params: Record<string, unknown> = {}) => [...ADMIN_PRODUCTS_KEY, 'list', params] as const,
       detail: (id: number | string) => [...ADMIN_PRODUCTS_KEY, 'detail', id] as const,
     },
+    orders: {
+      all: ADMIN_ORDERS_KEY,
+      list:   (params: Record<string, unknown> = {}) => [...ADMIN_ORDERS_KEY, 'list', params] as const,
+      detail: (id: number | string) => [...ADMIN_ORDERS_KEY, 'detail', id] as const,
+    },
     users: {
       all: ADMIN_USERS_KEY,
       list:   (params: Record<string, unknown> = {}) => [...ADMIN_USERS_KEY, 'list', params] as const,
@@ -32,6 +39,11 @@ export const QUERY_KEYS = {
     profile:   ['account', 'profile'] as const,
     sessions:  (page: number) => ['account', 'sessions', page] as const,
     addresses: ['account', 'addresses'] as const,
+    orders: {
+      all: ACCOUNT_ORDERS_KEY,
+      list:   (params: Record<string, unknown> = {}) => [...ACCOUNT_ORDERS_KEY, 'list', params] as const,
+      detail: (id: number | string) => [...ACCOUNT_ORDERS_KEY, 'detail', id] as const,
+    },
   },
   geo: {
     provinces: ['geo', 'provinces'] as const,
