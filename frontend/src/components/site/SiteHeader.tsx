@@ -1,18 +1,15 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, ShoppingBag, User, Heart, Phone, Mail, Menu, X, ChevronDown, Store } from "lucide-react";
+import { ChevronDown, Heart, Mail, Menu, Phone, Search, ShoppingBag, User, X } from "lucide-react";
 import { toast } from "sonner";
-import { useStorefront } from "@/hooks/useStorefront";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBrandParts, getPhoneHref } from "@/constants/site-settings";
+import { useBrands } from "@/hooks/useBrands";
+import { useCategories } from "@/hooks/useCategories";
 import { usePublicSettings } from "@/hooks/usePublicSettings";
+import { useStorefront } from "@/hooks/useStorefront";
 import { formatVietnamPhone } from "@/lib/phone";
-
-const PRODUCT_MENU: { label: string; to: string }[] = [
-  { label: "Nước hoa Nam", to: "/category/nam" },
-  { label: "Nước hoa Nữ", to: "/category/nu" },
-  { label: "Nước hoa Unisex", to: "/category/unisex" },
-];
+import type { Category } from "@/types/category";
 
 const NAV: { label: string; to: string; dropdown?: boolean }[] = [
   { label: "Trang chủ", to: "/" },
@@ -27,10 +24,26 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
   const storefront = useStorefront();
   const { user, logout } = useAuth();
   const { settings } = usePublicSettings();
+  const brandsQuery = useBrands();
+  const categoriesQuery = useCategories();
   const brand = getBrandParts(settings.store_name);
   const phoneHref = getPhoneHref(settings.phone);
   const displayedPhone = formatVietnamPhone(settings.phone);
   const displayedCartCount = cartCount ?? storefront.cartCount;
+  const productMenu = useMemo(
+    () => flattenCategories(categoriesQuery.data ?? []).map((category) => ({
+      label: category.name,
+      to: `/shop?category=${category.slug}`,
+    })),
+    [categoriesQuery.data],
+  );
+  const brandMenu = useMemo(
+    () => (brandsQuery.data ?? []).map((item) => ({
+      label: item.name,
+      to: `/shop?brand=${item.slug}`,
+    })),
+    [brandsQuery.data],
+  );
   const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileVisible, setMobileVisible] = useState(false);
@@ -53,8 +66,8 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
     closeMenu();
   };
 
-  const submitSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitSearch = (event: FormEvent) => {
+    event.preventDefault();
     if (!query.trim()) return;
     navigate(`/search?q=${encodeURIComponent(query.trim())}`);
     closeMenu();
@@ -62,8 +75,7 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
 
   return (
     <>
-      {/* Top bar */}
-      <div className="bg-stone-900 text-stone-200 text-xs">
+      <div className="bg-stone-900 text-xs text-stone-200">
         <div className="mx-auto flex min-h-9 max-w-7xl items-center justify-between px-4 py-2.5">
           <div className="flex items-center gap-4">
             {settings.phone && (
@@ -95,15 +107,14 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
             ) : (
               <>
                 <Link to="/auth/login" className="hover:text-white">Đăng nhập</Link>
-                <span className="hidden sm:inline opacity-50">|</span>
-                <Link to="/auth/register" className="hidden sm:inline hover:text-white">Đăng ký</Link>
+                <span className="hidden opacity-50 sm:inline">|</span>
+                <Link to="/auth/register" className="hidden hover:text-white sm:inline">Đăng ký</Link>
               </>
             )}
           </div>
         </div>
       </div>
 
-      {/* Header */}
       <header className="sticky top-0 z-40 border-b border-stone-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
           <button
@@ -114,93 +125,125 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
             <Menu className="h-5 w-5" />
           </button>
 
-          <Link to="/" className="flex items-center gap-2 shrink-0">
+          <Link to="/" className="flex shrink-0 items-center gap-2">
             {settings.logo ? (
               <img src={settings.logo} alt={settings.store_name} className="h-9 w-9 rounded-full object-contain" />
             ) : (
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-stone-900 text-white text-sm font-semibold">
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-stone-900 text-sm font-semibold text-white">
                 {brand.primary.charAt(0).toUpperCase()}
               </div>
             )}
-            <div className="leading-tight hidden sm:block">
-              <div className="text-base font-bold tracking-wide uppercase">{brand.primary}</div>
+            <div className="hidden leading-tight sm:block">
+              <div className="text-base font-bold uppercase tracking-wide">{brand.primary}</div>
               {brand.secondary && (
                 <div className="text-[10px] uppercase tracking-[0.2em] text-stone-500">{brand.secondary}</div>
               )}
             </div>
-            <div className="text-base font-bold tracking-wide uppercase sm:hidden">{brand.primary}</div>
+            <div className="text-base font-bold uppercase tracking-wide sm:hidden">{brand.primary}</div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1 ml-4">
-            {NAV.map((n) =>
-              n.dropdown ? (
-                <div key={n.label} className="relative group">
+          <nav className="ml-4 hidden items-center gap-1 md:flex">
+            {NAV.map((item) =>
+              item.dropdown ? (
+                <div key={item.label} className="group relative">
                   <Link
-                    to={n.to}
+                    to={item.to}
                     className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-stone-700 hover:text-amber-700"
                   >
-                    {n.label}
+                    {item.label}
                     <ChevronDown className="h-3.5 w-3.5 transition-transform group-hover:rotate-180" />
                   </Link>
                   <div className="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-2 opacity-0 transition-all duration-150 group-hover:visible group-hover:opacity-100">
-                    <div className="w-56 rounded-lg border border-stone-200 bg-white py-2 shadow-lg">
-                      <ul>
-                        {PRODUCT_MENU.map((it) => (
-                          <li key={it.label}>
-                            <Link
-                              to={it.to}
-                              className="block border-b border-dashed border-stone-200 px-4 py-2.5 text-sm text-stone-700 last:border-b-0 hover:bg-stone-50 hover:text-amber-700"
-                            >
-                              {it.label}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
+                    <div className="w-[520px] rounded-lg border border-stone-200 bg-white p-4 shadow-lg">
+                      <div className="grid grid-cols-2 gap-5">
+                        <div>
+                          <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400">
+                            Danh mục
+                          </div>
+                          <ul className="space-y-0.5">
+                            {productMenu.map((category) => (
+                              <li key={category.to}>
+                                <Link
+                                  to={category.to}
+                                  className="block rounded-md px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 hover:text-amber-700"
+                                >
+                                  {category.label}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        {brandMenu.length > 0 && (
+                          <div className="border-l border-dashed border-stone-200 pl-5">
+                            <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400">
+                              Thương hiệu
+                            </div>
+                            <ul className="grid grid-cols-1 gap-0.5">
+                              {brandMenu.map((brandItem) => (
+                                <li key={brandItem.to}>
+                                  <Link
+                                    to={brandItem.to}
+                                    className="block rounded-md px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 hover:text-amber-700"
+                                  >
+                                    {brandItem.label}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-
                 </div>
               ) : (
-                <Link key={n.label} to={n.to} className="px-3 py-2 text-sm font-medium text-stone-700 hover:text-amber-700">
-                  {n.label}
+                <Link key={item.label} to={item.to} className="px-3 py-2 text-sm font-medium text-stone-700 hover:text-amber-700">
+                  {item.label}
                 </Link>
-              )
+              ),
             )}
           </nav>
 
-          <form onSubmit={submitSearch} className="hidden lg:flex flex-1 max-w-sm ml-auto">
+          <form onSubmit={submitSearch} className="ml-auto hidden max-w-sm flex-1 lg:flex">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
               <input
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(event) => setQuery(event.target.value)}
                 placeholder="Tìm kiếm sản phẩm..."
-                className="w-full rounded-full border border-input bg-stone-50 py-2 pl-10 pr-4 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:bg-white"
+                className="w-full rounded-full border border-input bg-stone-50 py-2 pl-10 pr-4 text-sm focus-visible:bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
             </div>
           </form>
 
-          <div className="flex items-center gap-1 ml-auto lg:ml-2">
-            <Link to="/search" className="grid h-10 w-10 place-items-center rounded-full hover:bg-stone-100 lg:hidden" aria-label="Tìm"><Search className="h-5 w-5" /></Link>
-            <Link to="/account/wishlist" className="grid h-10 w-10 place-items-center rounded-full hover:bg-stone-100 hidden sm:grid" aria-label="Yêu thích"><Heart className="h-5 w-5" /></Link>
-            <Link to="/account" className="grid h-10 w-10 place-items-center rounded-full hover:bg-stone-100 hidden sm:grid" aria-label="Tài khoản"><User className="h-5 w-5" /></Link>
+          <div className="ml-auto flex items-center gap-1 lg:ml-2">
+            <Link to="/search" className="grid h-10 w-10 place-items-center rounded-full hover:bg-stone-100 lg:hidden" aria-label="Tìm">
+              <Search className="h-5 w-5" />
+            </Link>
+            <Link to="/account/wishlist" className="hidden h-10 w-10 place-items-center rounded-full hover:bg-stone-100 sm:grid" aria-label="Yêu thích">
+              <Heart className="h-5 w-5" />
+            </Link>
+            <Link to="/account" className="hidden h-10 w-10 place-items-center rounded-full hover:bg-stone-100 sm:grid" aria-label="Tài khoản">
+              <User className="h-5 w-5" />
+            </Link>
             <Link to="/cart" className="relative grid h-10 w-10 place-items-center rounded-full hover:bg-stone-100" aria-label="Giỏ hàng">
               <ShoppingBag className="h-5 w-5" />
-              <span className="absolute top-1 right-1 grid h-4 w-4 place-items-center rounded-full bg-amber-600 text-[10px] text-white">{displayedCartCount}</span>
+              <span className="absolute right-1 top-1 grid h-4 w-4 place-items-center rounded-full bg-amber-600 text-[10px] text-white">
+                {displayedCartCount}
+              </span>
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
-            className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${mobileVisible ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${mobileVisible ? "opacity-100" : "opacity-0"}`}
             onClick={closeMenu}
           />
           <aside
-            className={`absolute left-0 top-0 h-full w-72 max-w-[80%] bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${mobileVisible ? 'translate-x-0' : '-translate-x-full'}`}
+            className={`absolute left-0 top-0 flex h-full w-72 max-w-[80%] flex-col bg-white shadow-xl transition-transform duration-300 ease-out ${mobileVisible ? "translate-x-0" : "-translate-x-full"}`}
           >
             <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
               <div className="text-base font-bold uppercase">{settings.store_name}</div>
@@ -210,54 +253,66 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
             </div>
             <form onSubmit={submitSearch} className="border-b border-stone-200 p-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                 <input
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(event) => setQuery(event.target.value)}
                   placeholder="Tìm kiếm..."
                   className="w-full rounded-full border border-input bg-stone-50 py-2 pl-10 pr-4 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
             </form>
             <nav className="flex-1 overflow-y-auto py-2">
-              {NAV.map((n) =>
-                n.dropdown ? (
-                  <div key={n.label} className="border-b border-stone-100">
+              {NAV.map((item) =>
+                item.dropdown ? (
+                  <div key={item.label} className="border-b border-stone-100">
                     <button
-                      onClick={() => setMobileProductOpen((p) => !p)}
+                      onClick={() => setMobileProductOpen((open) => !open)}
                       className="flex w-full items-center justify-between px-5 py-3 text-sm font-medium text-stone-800 hover:bg-stone-50"
                     >
-                      <span>{n.label}</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${mobileProductOpen ? 'rotate-180' : ''}`} />
+                      <span>{item.label}</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${mobileProductOpen ? "rotate-180" : ""}`} />
                     </button>
                     {mobileProductOpen && (
                       <ul className="px-5 pb-3">
-                        <li>
-                          <Link to={n.to} onClick={closeMenu} className="block py-2 text-sm font-semibold text-stone-800 hover:text-amber-700">
-                            Tất cả sản phẩm
-                          </Link>
+                        <li className="pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400">
+                          Danh mục
                         </li>
-                        {PRODUCT_MENU.map((it) => (
-                          <li key={it.label}>
-                            <Link to={it.to} onClick={closeMenu} className="block py-2 text-sm text-stone-700 hover:text-amber-700">
-                              {it.label}
+                        {productMenu.map((category) => (
+                          <li key={category.to}>
+                            <Link to={category.to} onClick={closeMenu} className="block py-2 text-sm text-stone-700 hover:text-amber-700">
+                              {category.label}
                             </Link>
                           </li>
                         ))}
+                        {brandMenu.length > 0 && (
+                          <>
+                            <li className="mt-2 border-t border-dashed border-stone-200 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400">
+                              Thương hiệu
+                            </li>
+                            {brandMenu.map((brandItem) => (
+                              <li key={brandItem.to}>
+                                <Link to={brandItem.to} onClick={closeMenu} className="block py-2 text-sm text-stone-700 hover:text-amber-700">
+                                  {brandItem.label}
+                                </Link>
+                              </li>
+                            ))}
+                          </>
+                        )}
                       </ul>
                     )}
                   </div>
                 ) : (
-                  <Link key={n.label} to={n.to} onClick={closeMenu} className="block px-5 py-3 text-sm font-medium text-stone-800 hover:bg-stone-50 border-b border-stone-100">
-                    {n.label}
+                  <Link key={item.label} to={item.to} onClick={closeMenu} className="block border-b border-stone-100 px-5 py-3 text-sm font-medium text-stone-800 hover:bg-stone-50">
+                    {item.label}
                   </Link>
-                )
+                ),
               )}
-              <Link to="/account" onClick={closeMenu} className="block px-5 py-3 text-sm font-medium text-stone-800 hover:bg-stone-50 border-b border-stone-100">Tài khoản</Link>
-              <Link to="/cart" onClick={closeMenu} className="block px-5 py-3 text-sm font-medium text-stone-800 hover:bg-stone-50 border-b border-stone-100">Giỏ hàng</Link>
-              <Link to="/account/wishlist" onClick={closeMenu} className="block px-5 py-3 text-sm font-medium text-stone-800 hover:bg-stone-50 border-b border-stone-100">Yêu thích</Link>
+              <Link to="/account" onClick={closeMenu} className="block border-b border-stone-100 px-5 py-3 text-sm font-medium text-stone-800 hover:bg-stone-50">Tài khoản</Link>
+              <Link to="/cart" onClick={closeMenu} className="block border-b border-stone-100 px-5 py-3 text-sm font-medium text-stone-800 hover:bg-stone-50">Giỏ hàng</Link>
+              <Link to="/account/wishlist" onClick={closeMenu} className="block border-b border-stone-100 px-5 py-3 text-sm font-medium text-stone-800 hover:bg-stone-50">Yêu thích</Link>
             </nav>
-            <div className="border-t border-stone-200 p-3 flex flex-col gap-2">
+            <div className="flex flex-col gap-2 border-t border-stone-200 p-3">
               {user ? (
                 <>
                   {user.role === "admin" && (
@@ -288,4 +343,11 @@ export default function SiteHeader({ cartCount }: { cartCount?: number }) {
       )}
     </>
   );
+}
+
+function flattenCategories(categories: Category[]): Category[] {
+  return categories.flatMap((category) => [
+    category,
+    ...flattenCategories(category.children ?? []),
+  ]);
 }

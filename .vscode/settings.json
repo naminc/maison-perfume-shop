@@ -1,0 +1,13 @@
+{
+  "rest-client.environmentVariables": {
+    "$shared": {
+      "baseUrl": "http://localhost:8000/api/v1"
+    },
+    "dev": {
+      "baseUrl": "http://localhost:8000/api/v1"
+    },
+    "prod": {
+      "baseUrl": "https://api.example.com"
+    }
+  }
+}

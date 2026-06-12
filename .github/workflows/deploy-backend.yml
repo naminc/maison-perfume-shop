@@ -11,6 +11,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Gửi tín hiệu tới aaPanel Webhook
+      - name: Send Deployment Trigger to aaPanel
         run: |
           curl -X GET "${{ secrets.AAPANEL_WEBHOOK_URL }}"

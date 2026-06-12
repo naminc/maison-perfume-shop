@@ -15,29 +15,27 @@ import perfumeCollection from "@/assets/perfume-collection.jpg";
 import perfumeRose from "@/assets/perfume-rose.jpg";
 import perfumeDark from "@/assets/perfume-dark.jpg";
 import perfumeLifestyle from "@/assets/perfume-lifestyle.jpg";
-import { perfumes } from "@/lib/demo/perfume-catalog";
-
-const FEATURED = perfumes.filter((p) => p.hot || p.isNew).slice(0, 4);
-const BEST_SELLERS = [...perfumes].sort((a, b) => b.reviews - a.reviews).slice(0, 4);
+import { useProducts } from "@/hooks/useProducts";
+import type { Product } from "@/types/product";
 
 const CATEGORIES = [
   {
     title: "Nước hoa Nam",
     desc: "Tông gỗ, cay, da thuộc và citrus cho phong thái lịch lãm.",
     image: perfumeDark,
-    to: "/category/nam",
+    to: "/shop?category=nuoc-hoa-nam",
   },
   {
     title: "Nước hoa Nữ",
     desc: "Floral, fruity và chypre thanh lịch cho nhiều dịp khác nhau.",
     image: perfumeRose,
-    to: "/category/nu",
+    to: "/shop?category=nuoc-hoa-nu",
   },
   {
     title: "Unisex",
     desc: "Những mùi hương trung tính, hiện đại và dễ chia sẻ.",
     image: perfumeLifestyle,
-    to: "/category/unisex",
+    to: "/shop?category=nuoc-hoa-unisex",
   },
 ];
 
@@ -49,6 +47,11 @@ const PERKS = [
 ];
 
 export default function Landing() {
+  const featuredQuery = useProducts({ is_featured: "true", per_page: 4 });
+  const suggestedQuery = useProducts({ per_page: 4 });
+  const featured = featuredQuery.data?.data ?? [];
+  const suggested = suggestedQuery.data?.data ?? [];
+
   return (
     <div className="min-h-screen bg-white text-stone-900">
       <SiteHeader />
@@ -148,11 +151,11 @@ export default function Landing() {
               Xem thêm
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
-            {FEATURED.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <ProductSectionGrid
+            products={featured}
+            isLoading={featuredQuery.isLoading}
+            emptyText="Chưa có sản phẩm nổi bật."
+          />
         </div>
       </section>
 
@@ -161,7 +164,7 @@ export default function Landing() {
         <div className="flex flex-col justify-center">
           <h2 className="text-2xl font-semibold tracking-tight text-stone-950 sm:text-3xl">Dễ chọn, dễ mua, dễ đổi</h2>
           <p className="mt-4 text-sm leading-7 text-stone-600 sm:text-base">
-            Maison xây dựng trải nghiệm mua nước hoa theo đúng cách khách hàng thật sự lựa chọn: xem nhóm hương, so sánh giá, đọc đánh giá, thêm vào giỏ và thanh toán trong một luồng rõ ràng.
+            Maison xây dựng trải nghiệm mua nước hoa theo đúng cách khách hàng thật sự lựa chọn: xem nhóm hương, so sánh giá, đọc mô tả, thêm vào giỏ và thanh toán trong một luồng rõ ràng.
           </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {[
@@ -182,22 +185,65 @@ export default function Landing() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-stone-950">Bán chạy</h2>
-              <p className="mt-1 text-sm text-stone-500">Những mùi hương có nhiều lượt đánh giá nhất.</p>
+              <h2 className="text-2xl font-semibold tracking-tight text-stone-950">Gợi ý cho bạn</h2>
+              <p className="mt-1 text-sm text-stone-500">Những mùi hương Maison đang chọn lọc từ catalogue hiện có.</p>
             </div>
-            <Link to="/reviews" className="text-sm font-semibold text-amber-700 hover:underline">
-              Xem đánh giá
+            <Link to="/shop" className="text-sm font-semibold text-amber-700 hover:underline">
+              Xem thêm
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
-            {BEST_SELLERS.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <ProductSectionGrid
+            products={suggested}
+            isLoading={suggestedQuery.isLoading}
+            emptyText="Chưa có sản phẩm gợi ý."
+          />
         </div>
       </section>
 
       <SiteFooter />
+    </div>
+  );
+}
+
+function ProductSectionGrid({
+  products,
+  isLoading,
+  emptyText,
+}: {
+  products: Product[];
+  isLoading: boolean;
+  emptyText: string;
+}) {
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
+            <div className="aspect-square animate-pulse bg-stone-100" />
+            <div className="space-y-2 p-3">
+              <div className="h-3 w-1/3 animate-pulse rounded bg-stone-100" />
+              <div className="h-4 animate-pulse rounded bg-stone-100" />
+              <div className="h-4 w-2/3 animate-pulse rounded bg-stone-100" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="rounded-xl border border-stone-200 bg-white py-10 text-center text-sm text-stone-500">
+        {emptyText}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+      {products.map((product) => (
+        <ProductCard key={product.id} product={product} />
+      ))}
     </div>
   );
 }

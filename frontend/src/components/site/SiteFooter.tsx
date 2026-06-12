@@ -20,9 +20,9 @@ export default function SiteFooter() {
           <div className="text-sm font-semibold text-white">Mua sắm</div>
           <ul className="mt-3 space-y-2 text-sm">
             <li><Link to="/shop" className="hover:text-white">Tất cả sản phẩm</Link></li>
-            <li><Link to="/category/nam" className="hover:text-white">Nước hoa nam</Link></li>
-            <li><Link to="/category/nu" className="hover:text-white">Nước hoa nữ</Link></li>
-            <li><Link to="/category/unisex" className="hover:text-white">Nước hoa unisex</Link></li>
+            <li><Link to="/shop?category=nuoc-hoa-nam" className="hover:text-white">Nước hoa nam</Link></li>
+            <li><Link to="/shop?category=nuoc-hoa-nu" className="hover:text-white">Nước hoa nữ</Link></li>
+            <li><Link to="/shop?category=nuoc-hoa-unisex" className="hover:text-white">Nước hoa unisex</Link></li>
             <li><Link to="/reviews" className="hover:text-white">Đánh giá khách hàng</Link></li>
           </ul>
         </div>

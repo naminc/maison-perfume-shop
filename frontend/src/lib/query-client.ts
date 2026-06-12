@@ -2,6 +2,8 @@ import { QueryClient } from '@tanstack/react-query';
 import { STALE_TIME } from '@/constants/query-config';
 import { QUERY_KEYS } from '@/constants/query-keys';
 import { accountApi } from '@/api/account';
+import { brandApi } from '@/api/brand';
+import { categoryApi } from '@/api/category';
 import { settingApi } from '@/api/setting';
 import { tokenStorage } from '@/lib/token';
 
@@ -22,6 +24,18 @@ export function prefetchCriticalData() {
   queryClient.prefetchQuery({
     queryKey: QUERY_KEYS.settings.public,
     queryFn: settingApi.getPublic,
+    staleTime: STALE_TIME.LONG,
+  });
+
+  queryClient.prefetchQuery({
+    queryKey: QUERY_KEYS.categories.publicTree,
+    queryFn: categoryApi.getPublicCategories,
+    staleTime: STALE_TIME.LONG,
+  });
+
+  queryClient.prefetchQuery({
+    queryKey: QUERY_KEYS.brands.publicList,
+    queryFn: brandApi.getPublicBrands,
     staleTime: STALE_TIME.LONG,
   });
 

@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { CheckCircle2, Package, Mail } from "lucide-react";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
-import { fmtVnd } from "@/lib/demo/perfume-catalog";
+import { formatVnd } from "@/lib/product-utils";
 
 export default function CheckoutSuccess() {
   const { state } = useLocation() as { state?: { orderId?: string; total?: number; email?: string } };
@@ -33,7 +33,7 @@ export default function CheckoutSuccess() {
             {typeof state?.total === "number" && (
               <div className="mt-3 flex items-center justify-between text-sm">
                 <div className="text-stone-500">Tổng thanh toán</div>
-                <div className="font-semibold text-stone-900">{fmtVnd(state.total)}</div>
+                <div className="font-semibold text-stone-900">{formatVnd(state.total)}</div>
               </div>
             )}
             <div className="mt-3 flex items-center gap-2 text-xs text-stone-500">

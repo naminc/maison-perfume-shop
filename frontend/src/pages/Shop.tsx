@@ -1,56 +1,82 @@
-import { useMemo, useState } from "react";
-import { SlidersHorizontal, X } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
+import { PackageSearch, SlidersHorizontal, X } from "lucide-react";
 import ContentPage from "@/components/site/ContentPage";
 import ProductCard from "@/components/site/ProductCard";
-import { perfumes, BRANDS, FAMILIES, type Gender, type Family } from "@/lib/demo/perfume-catalog";
+import { useBrands } from "@/hooks/useBrands";
+import { useCategories } from "@/hooks/useCategories";
+import { useProducts } from "@/hooks/useProducts";
+import { productPrice } from "@/lib/product-utils";
+import type { Category } from "@/types/category";
+import type { Product } from "@/types/product";
 
 type SortKey = "popular" | "price-asc" | "price-desc" | "newest";
 
-const GENDERS: { id: Gender | "all"; label: string }[] = [
-  { id: "all", label: "Tất cả" },
-  { id: "nam", label: "Nam" },
-  { id: "nu", label: "Nữ" },
-  { id: "unisex", label: "Unisex" },
-];
-
 export default function Shop() {
-  const [gender, setGender] = useState<Gender | "all">("all");
-  const [brand, setBrand] = useState<string | "all">("all");
-  const [family, setFamily] = useState<Family | "all">("all");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sort, setSort] = useState<SortKey>("popular");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const list = useMemo(() => {
-    let arr = perfumes.slice();
-    if (gender !== "all") arr = arr.filter((p) => p.gender === gender);
-    if (brand !== "all") arr = arr.filter((p) => p.brand === brand);
-    if (family !== "all") arr = arr.filter((p) => p.family === family);
-    switch (sort) {
-      case "price-asc": arr.sort((a, b) => a.price - b.price); break;
-      case "price-desc": arr.sort((a, b) => b.price - a.price); break;
-      case "newest": arr.sort((a, b) => Number(!!b.isNew) - Number(!!a.isNew)); break;
-      default: arr.sort((a, b) => b.reviews - a.reviews);
+  const brandsQuery = useBrands();
+  const categoriesQuery = useCategories();
+  const brands = brandsQuery.data ?? [];
+  const categories = useMemo(() => flattenCategories(categoriesQuery.data ?? []), [categoriesQuery.data]);
+  const brandSlug = searchParams.get("brand") ?? "";
+  const categorySlug = searchParams.get("category") ?? "";
+  const selectedBrandId = brandSlug ? brands.find((brand) => brand.slug === brandSlug)?.id ?? -1 : "all";
+  const selectedCategoryId = categorySlug ? categories.find((category) => category.slug === categorySlug)?.id ?? -1 : "all";
+
+  const productsQuery = useProducts({
+    brand_id: selectedBrandId,
+    category_id: selectedCategoryId,
+    per_page: 100,
+  });
+
+  const products = useMemo(() => sortProducts(productsQuery.data?.data ?? [], sort), [productsQuery.data?.data, sort]);
+  const isLoading = productsQuery.isLoading || brandsQuery.isLoading || categoriesQuery.isLoading;
+  const isError = productsQuery.isError || brandsQuery.isError || categoriesQuery.isError;
+
+  const updateFilter = (nextFilter: { brand?: string | null; category?: string | null }) => {
+    const next = new URLSearchParams(searchParams);
+
+    if (nextFilter.brand !== undefined) {
+      if (nextFilter.brand) next.set("brand", nextFilter.brand);
+      else next.delete("brand");
     }
-    return arr;
-  }, [gender, brand, family, sort]);
+
+    if (nextFilter.category !== undefined) {
+      if (nextFilter.category) next.set("category", nextFilter.category);
+      else next.delete("category");
+    }
+
+    setSearchParams(next);
+  };
 
   const filters = (
     <div className="space-y-6">
-      <FilterGroup title="Giới tính">
-        {GENDERS.map((g) => (
-          <Chip key={g.id} active={gender === g.id} onClick={() => setGender(g.id)}>{g.label}</Chip>
+      <FilterGroup title="Danh mục">
+        <Chip active={!categorySlug} onClick={() => updateFilter({ category: null })}>Tất cả</Chip>
+        {categories.map((category) => (
+          <Chip
+            key={category.id}
+            active={categorySlug === category.slug}
+            onClick={() => updateFilter({ category: category.slug })}
+          >
+            {category.name}
+          </Chip>
         ))}
       </FilterGroup>
+
       <FilterGroup title="Thương hiệu">
-        <Chip active={brand === "all"} onClick={() => setBrand("all")}>Tất cả</Chip>
-        {BRANDS.map((b) => (
-          <Chip key={b} active={brand === b} onClick={() => setBrand(b)}>{b}</Chip>
-        ))}
-      </FilterGroup>
-      <FilterGroup title="Nhóm hương">
-        <Chip active={family === "all"} onClick={() => setFamily("all")}>Tất cả</Chip>
-        {FAMILIES.map((f) => (
-          <Chip key={f} active={family === f} onClick={() => setFamily(f)}>{f}</Chip>
+        <Chip active={!brandSlug} onClick={() => updateFilter({ brand: null })}>Tất cả</Chip>
+        {brands.map((brand) => (
+          <Chip
+            key={brand.id}
+            active={brandSlug === brand.slug}
+            onClick={() => updateFilter({ brand: brand.slug })}
+          >
+            {brand.name}
+          </Chip>
         ))}
       </FilterGroup>
     </div>
@@ -59,7 +85,6 @@ export default function Shop() {
   return (
     <ContentPage title="Tất cả sản phẩm" subtitle="Khám phá các mùi hương được Maison tuyển chọn từ những thương hiệu danh tiếng." crumbs={[{ label: "Sản phẩm" }]}>
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        {/* Desktop filters */}
         <aside className="hidden rounded-xl border border-stone-200 bg-white p-5 lg:block">
           {filters}
         </aside>
@@ -72,10 +97,12 @@ export default function Shop() {
             >
               <SlidersHorizontal className="h-4 w-4" /> Bộ lọc
             </button>
-            <div className="text-sm text-stone-500">{list.length} sản phẩm</div>
+            <div className="text-sm text-stone-500">
+              {isLoading ? "Đang tải..." : `${productsQuery.data?.total ?? products.length} sản phẩm`}
+            </div>
             <select
               value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
+              onChange={(event) => setSort(event.target.value as SortKey)}
               className="ml-auto rounded-lg border border-input bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="popular">Phổ biến</option>
@@ -85,19 +112,20 @@ export default function Shop() {
             </select>
           </div>
 
-          {list.length === 0 ? (
-            <div className="rounded-xl border border-stone-200 bg-white py-16 text-center text-sm text-stone-500">
-              Không có sản phẩm phù hợp với bộ lọc.
-            </div>
+          {isLoading ? (
+            <ProductGridSkeleton />
+          ) : isError ? (
+            <StateBox title="Không thể tải sản phẩm" description="Vui lòng thử lại sau." />
+          ) : products.length === 0 ? (
+            <StateBox title="Không có sản phẩm phù hợp" description="Thử thay đổi bộ lọc hoặc xem tất cả sản phẩm." />
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
-              {list.map((p) => <ProductCard key={p.id} product={p} />)}
+              {products.map((product) => <ProductCard key={product.id} product={product} />)}
             </div>
           )}
         </section>
       </div>
 
-      {/* Mobile filters drawer */}
       {filtersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setFiltersOpen(false)} />
@@ -110,7 +138,7 @@ export default function Shop() {
             </div>
             {filters}
             <button onClick={() => setFiltersOpen(false)} className="mt-6 w-full rounded-lg bg-stone-900 py-2.5 text-sm font-semibold text-white">
-              Xem {list.length} sản phẩm
+              Xem {products.length} sản phẩm
             </button>
           </aside>
         </div>
@@ -119,7 +147,7 @@ export default function Shop() {
   );
 }
 
-function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
+function FilterGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
       <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500">{title}</div>
@@ -128,7 +156,7 @@ function FilterGroup({ title, children }: { title: string; children: React.React
   );
 }
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       onClick={onClick}
@@ -139,4 +167,53 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       {children}
     </button>
   );
+}
+
+function StateBox({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-xl border border-stone-200 bg-white py-16 text-center">
+      <PackageSearch className="mx-auto h-10 w-10 text-stone-300" strokeWidth={1.5} />
+      <h2 className="mt-3 text-lg font-medium text-stone-900">{title}</h2>
+      <p className="mt-1 text-sm text-stone-500">{description}</p>
+    </div>
+  );
+}
+
+function ProductGridSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
+      {Array.from({ length: 8 }).map((_, index) => (
+        <div key={index} className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
+          <div className="aspect-square animate-pulse bg-stone-100" />
+          <div className="space-y-2 p-3">
+            <div className="h-3 w-1/3 animate-pulse rounded bg-stone-100" />
+            <div className="h-4 animate-pulse rounded bg-stone-100" />
+            <div className="h-4 w-2/3 animate-pulse rounded bg-stone-100" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function flattenCategories(categories: Category[]): Category[] {
+  return categories.flatMap((category) => [
+    category,
+    ...flattenCategories(category.children ?? []),
+  ]);
+}
+
+function sortProducts(products: Product[], sort: SortKey) {
+  const list = [...products];
+
+  switch (sort) {
+    case "price-asc":
+      return list.sort((a, b) => productPrice(a) - productPrice(b));
+    case "price-desc":
+      return list.sort((a, b) => productPrice(b) - productPrice(a));
+    case "newest":
+      return list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    default:
+      return list.sort((a, b) => Number(b.is_featured) - Number(a.is_featured) || a.sort_order - b.sort_order);
+  }
 }
