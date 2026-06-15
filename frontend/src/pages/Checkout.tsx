@@ -3,9 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import type { AxiosError } from "axios";
 import {
   ArrowLeft,
-  Building2,
   Check,
-  CreditCard,
   MapPin,
   Package,
   ShoppingBag,
@@ -52,8 +50,6 @@ const SHIP_OPTIONS: Array<{ id: ShippingMethod; label: string; desc: string; fee
 
 const PAY_OPTIONS: Array<{ id: PaymentMethod; label: string; icon: typeof Wallet }> = [
   { id: "cod", label: "Thanh toán khi nhận hàng (COD)", icon: Wallet },
-  { id: "bank", label: "Chuyển khoản ngân hàng", icon: Building2 },
-  { id: "card", label: "Thẻ tín dụng / ghi nợ", icon: CreditCard },
 ];
 
 const ADDRESS_TYPE_LABELS: Record<UserAddress["address_type"], string> = {
@@ -448,8 +444,11 @@ export default function Checkout() {
 
               <section className="rounded-xl border border-stone-200 bg-white p-6">
                 <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-                  <CreditCard className="h-5 w-5" />Phương thức thanh toán
+                  <Wallet className="h-5 w-5" />Phương thức thanh toán
                 </h2>
+                <p className="mb-3 text-sm text-stone-500">
+                  Hiện tại Maison chỉ hỗ trợ thanh toán khi nhận hàng.
+                </p>
                 <div className="space-y-2">
                   {PAY_OPTIONS.map((option) => {
                     const Icon = option.icon;

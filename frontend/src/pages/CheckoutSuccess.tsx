@@ -48,7 +48,7 @@ export default function CheckoutSuccess() {
             {email && (
               <div className="mt-3 flex items-center gap-2 text-xs text-stone-500">
                 <Mail className="h-3.5 w-3.5" />
-                Email xác nhận sẽ được gửi tới <span className="font-medium text-stone-700">{email}</span>
+                Maison sẽ gửi email xác nhận tới <span className="font-medium text-stone-700">{email}</span> nếu địa chỉ email hợp lệ.
               </div>
             )}
           </div>

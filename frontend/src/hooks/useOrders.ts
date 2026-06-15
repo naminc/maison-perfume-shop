@@ -30,3 +30,16 @@ export function useMyOrder(order?: string) {
     enabled: Boolean(order),
   });
 }
+
+export function useCancelOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (order: string) => orderApi.cancelMyOrder(order),
+    onSuccess: (order) => {
+      queryClient.setQueryData(QUERY_KEYS.account.orders.detail(order.order_code), order);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.account.orders.all });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.products.all });
+    },
+  });
+}

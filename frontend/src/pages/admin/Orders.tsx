@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AxiosError } from "axios";
-import { Download, Eye, MoreVertical, RefreshCw, ShoppingCart, Trash2 } from "lucide-react";
+import { Check, Download, Eye, MoreVertical, RefreshCw, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { adminOrderApi } from "@/api/admin/order";
 import {
@@ -479,6 +479,8 @@ export default function Orders() {
                 </div>
               </div>
 
+              <OrderTimeline order={detailOrder} />
+
               <div className="rounded-md border border-border">
                 <div className="border-b border-border px-4 py-3 text-sm font-semibold">Sản phẩm</div>
                 <div className="divide-y divide-border">
@@ -608,6 +610,76 @@ function StatusBadge({ status }: { status: OrderStatus }) {
     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${ORDER_STATUS_BADGE_CLASS[status]}`}>
       {ORDER_STATUS_LABELS[status]}
     </span>
+  );
+}
+
+const ORDER_TIMELINE_STEPS: Array<{ id: OrderStatus; label: string }> = [
+  { id: "pending", label: "Chờ xử lý" },
+  { id: "confirmed", label: "Đã xác nhận" },
+  { id: "processing", label: "Đang chuẩn bị" },
+  { id: "shipping", label: "Đang giao" },
+  { id: "completed", label: "Hoàn thành" },
+];
+
+const ORDER_TIMELINE_INDEX: Partial<Record<OrderStatus, number>> = {
+  pending: 0,
+  confirmed: 1,
+  processing: 2,
+  shipping: 3,
+  completed: 4,
+};
+
+function OrderTimeline({ order }: { order: Order }) {
+  if (order.status === "cancelled") {
+    return (
+      <div className="rounded-md border border-red-100 bg-red-50 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-red-800">Đã huỷ</div>
+            <div className="mt-1 text-xs text-red-700">
+              {order.cancelled_at ? formatDateTime(order.cancelled_at) : "Tồn kho đã được hoàn lại khi huỷ đơn."}
+            </div>
+          </div>
+          <StatusBadge status="cancelled" />
+        </div>
+      </div>
+    );
+  }
+
+  const currentIndex = ORDER_TIMELINE_INDEX[order.status] ?? 0;
+
+  return (
+    <div className="rounded-md border border-border p-4">
+      <div className="mb-3 text-sm font-semibold">Timeline xử lý</div>
+      <ol className="grid gap-3 md:grid-cols-5 md:gap-0">
+        {ORDER_TIMELINE_STEPS.map((step, index) => {
+          const done = index <= currentIndex;
+          const active = index === currentIndex;
+          const connectorDone = index < currentIndex;
+
+          return (
+            <li key={step.id} className="relative flex min-w-0 items-start gap-2 pb-2 last:pb-0 md:block md:px-2 md:pb-0 md:text-center">
+              {index < ORDER_TIMELINE_STEPS.length - 1 && (
+                <span
+                  className={`absolute left-[14px] top-8 h-[calc(100%-0.75rem)] w-px md:left-[calc(50%+14px)] md:top-[14px] md:h-px md:w-[calc(100%-28px)] ${
+                    connectorDone ? "bg-primary" : "bg-border"
+                  }`}
+                  aria-hidden="true"
+                />
+              )}
+              <div className={`relative z-20 mx-0 grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs md:mx-auto ${
+                done ? "border-primary bg-primary text-primary-foreground" : "border-border bg-muted text-muted-foreground"
+              }`}>
+                {done ? <Check className="h-3.5 w-3.5" /> : index + 1}
+              </div>
+              <span className={`block min-w-0 pt-1 text-xs font-medium md:mt-2 md:pt-0 ${active ? "text-primary" : done ? "text-foreground" : "text-muted-foreground"}`}>
+                {step.label}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
 

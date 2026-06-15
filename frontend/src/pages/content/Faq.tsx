@@ -8,7 +8,7 @@ const FAQS: { q: string; a: string }[] = [
   { q: "Tôi có thể đổi trả sản phẩm không?", a: "Có. Bạn được đổi trả miễn phí trong vòng 7 ngày kể từ khi nhận hàng nếu sản phẩm còn nguyên seal, chưa qua sử dụng." },
   { q: "Nước hoa chiết có khác gì so với bản full?", a: "Nước hoa chiết là cùng một loại nước hoa, được chiết sang chai nhỏ (5-10ml) từ bản full. Mùi hương và độ lưu hoàn toàn giống bản chính hãng." },
   { q: "Làm sao biết tôi hợp với mùi hương nào?", a: "Bạn có thể đặt set mẫu thử của Maison, hoặc liên hệ hotline để được tư vấn cá nhân hoá theo sở thích và phong cách." },
-  { q: "Tôi có thể thanh toán bằng những hình thức nào?", a: "Maison hỗ trợ COD, chuyển khoản ngân hàng, ví điện tử (Momo, ZaloPay) và thẻ tín dụng/ghi nợ Visa, Mastercard." },
+  { q: "Tôi có thể thanh toán bằng những hình thức nào?", a: "Hiện tại Maison chỉ hỗ trợ thanh toán khi nhận hàng (COD). Các phương thức khác sẽ được mở sau." },
   { q: "Đơn hàng của tôi mất bao lâu để giao?", a: "Nội thành TP. HCM: 1-2 ngày. Các tỉnh khác: 2-4 ngày với giao tiêu chuẩn. Giao nhanh chỉ áp dụng nội thành trong 24h." },
   { q: "Tôi có cần tài khoản để mua hàng không?", a: "Không bắt buộc — bạn có thể đặt hàng với tư cách khách. Tuy nhiên đăng ký tài khoản giúp bạn theo dõi đơn hàng và nhận ưu đãi riêng." },
 ];

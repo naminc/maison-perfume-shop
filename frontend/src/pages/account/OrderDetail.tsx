@@ -1,6 +1,20 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import type { AxiosError } from "axios";
 import { Check, CreditCard, MapPin, Package, Phone, Printer, RotateCcw, Truck } from "lucide-react";
+import { toast } from "sonner";
 import AccountLayout from "@/layouts/AccountLayout";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ButtonSpinner } from "@/components/shared/ButtonSpinner";
 import { Button } from "@/components/ui/button";
 import {
   ORDER_STATUS_BADGE_CLASS,
@@ -9,16 +23,18 @@ import {
   PAYMENT_STATUS_BADGE_CLASS,
   PAYMENT_STATUS_LABELS,
 } from "@/constants/order";
-import { useMyOrder } from "@/hooks/useOrders";
+import { useCancelOrder, useMyOrder } from "@/hooks/useOrders";
 import { formatAddressParts } from "@/lib/address-format";
 import { formatDateTime } from "@/lib/date-time";
 import { formatVietnamPhone } from "@/lib/phone";
 import { formatVnd } from "@/lib/product-utils";
+import type { ApiErrorResponse } from "@/types/auth";
 import type { Order, OrderStatus } from "@/types/order";
 
 const TRACKER_STEPS: Array<{ id: OrderStatus; label: string }> = [
   { id: "pending", label: "Đã đặt hàng" },
   { id: "confirmed", label: "Xác nhận" },
+  { id: "processing", label: "Chuẩn bị" },
   { id: "shipping", label: "Đang giao" },
   { id: "completed", label: "Hoàn thành" },
 ];
@@ -26,14 +42,16 @@ const TRACKER_STEPS: Array<{ id: OrderStatus; label: string }> = [
 const STEP_INDEX: Partial<Record<OrderStatus, number>> = {
   pending: 0,
   confirmed: 1,
-  processing: 1,
-  shipping: 2,
-  completed: 3,
+  processing: 2,
+  shipping: 3,
+  completed: 4,
 };
 
 export default function OrderDetail() {
   const { id } = useParams();
+  const [cancelOpen, setCancelOpen] = useState(false);
   const orderQuery = useMyOrder(id);
+  const cancelOrder = useCancelOrder();
   const order = orderQuery.data;
 
   if (orderQuery.isLoading) {
@@ -60,6 +78,22 @@ export default function OrderDetail() {
       </AccountLayout>
     );
   }
+
+  const canCancel = order.status === "pending" || order.status === "confirmed";
+
+  const confirmCancel = () => {
+    if (!order) return;
+
+    cancelOrder.mutate(order.order_code, {
+      onSuccess: () => {
+        toast.success("Đã huỷ đơn hàng.");
+        setCancelOpen(false);
+      },
+      onError: (error) => {
+        toast.error(getApiErrorMessage(error, "Huỷ đơn hàng thất bại."));
+      },
+    });
+  };
 
   return (
     <AccountLayout title={`Đơn hàng #${order.order_code}`} subtitle={`Đặt ngày ${formatDateTime(order.created_at)}`}>
@@ -128,6 +162,15 @@ export default function OrderDetail() {
             </InfoCard>
 
             <div className="flex flex-col gap-2">
+              {canCancel && (
+                <button
+                  type="button"
+                  onClick={() => setCancelOpen(true)}
+                  className="rounded-lg border border-red-200 bg-red-50 py-2.5 text-center text-sm font-semibold text-red-700 hover:bg-red-100"
+                >
+                  Huỷ đơn
+                </button>
+              )}
               <button className="flex items-center justify-center gap-1.5 rounded-lg bg-stone-900 py-2.5 text-sm font-semibold text-white hover:bg-stone-800">
                 <RotateCcw className="h-4 w-4" /> Mua lại
               </button>
@@ -138,6 +181,31 @@ export default function OrderDetail() {
           </aside>
         </div>
       </div>
+
+      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Huỷ đơn hàng này?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn chỉ có thể huỷ đơn khi đơn còn chờ xử lý hoặc đã xác nhận. Sau khi huỷ, hệ thống sẽ hoàn lại tồn kho cho sản phẩm trong đơn.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelOrder.isPending}>Không huỷ</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 text-white hover:bg-red-700"
+              disabled={cancelOrder.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                confirmCancel();
+              }}
+            >
+              {cancelOrder.isPending && <ButtonSpinner />}
+              Huỷ đơn
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AccountLayout>
   );
 }
@@ -169,17 +237,26 @@ function OrderTracker({ order }: { order: Order }) {
           {ORDER_STATUS_LABELS[order.status]}
         </span>
       </div>
-      <ol className="grid gap-4 sm:grid-cols-4">
+      <ol className="grid gap-4 md:grid-cols-5 md:gap-0">
         {TRACKER_STEPS.map((step, index) => {
           const done = index <= currentIdx;
           const active = index === currentIdx;
+          const connectorDone = index < currentIdx;
 
           return (
-            <li key={step.id} className="relative flex items-start gap-3 sm:flex-col sm:items-center sm:text-center">
-              <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 ${done ? "border-emerald-600 bg-emerald-600 text-white" : "border-stone-300 bg-white text-stone-400"}`}>
+            <li key={step.id} className="relative flex min-w-0 items-start gap-3 pb-2 last:pb-0 md:block md:px-2 md:pb-0 md:text-center">
+              {index < TRACKER_STEPS.length - 1 && (
+                <span
+                  className={`absolute left-[18px] top-10 h-[calc(100%-1rem)] w-px md:left-[calc(50%+18px)] md:top-[18px] md:h-px md:w-[calc(100%-36px)] ${
+                    connectorDone ? "bg-emerald-600" : "bg-stone-200"
+                  }`}
+                  aria-hidden="true"
+                />
+              )}
+              <div className={`relative z-20 mx-0 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 md:mx-auto ${done ? "border-emerald-600 bg-emerald-600 text-white" : "border-stone-300 bg-white text-stone-400"}`}>
                 {done ? <Check className="h-4 w-4" /> : <span className="text-xs font-semibold">{index + 1}</span>}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 md:mt-3">
                 <div className={`text-sm font-medium ${active ? "text-emerald-700" : done ? "text-stone-900" : "text-stone-500"}`}>{step.label}</div>
               </div>
             </li>
@@ -212,4 +289,12 @@ function InfoCard({ icon, title, children }: { icon: React.ReactNode; title: str
       {children}
     </div>
   );
+}
+
+function getApiErrorMessage(error: unknown, fallback: string) {
+  const err = error as AxiosError<ApiErrorResponse>;
+  const errors = err.response?.data?.errors as Record<string, string[]> | undefined;
+  const firstError = errors ? Object.values(errors).flat().find(Boolean) : undefined;
+
+  return firstError ?? err.response?.data?.message ?? err.message ?? fallback;
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { Heart, Minus, Plus, Truck, ShieldCheck, RotateCcw, ShoppingBag, PackageSearch } from "lucide-react";
+import { Heart, Minus, Plus, Truck, ShieldCheck, RotateCcw, ShoppingCart, PackageSearch } from "lucide-react";
 import { toast } from "sonner";
 import ContentPage from "@/components/site/ContentPage";
 import ProductCard from "@/components/site/ProductCard";
@@ -146,10 +146,7 @@ export default function ProductDetail() {
               </button>
             </div>
             <button onClick={handleAddToCart} disabled={!inStock} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-stone-900 bg-white py-3 text-sm font-semibold text-stone-900 shadow-sm transition-all hover:bg-stone-900 hover:text-white disabled:opacity-40">
-              <span className="relative inline-flex">
-                <ShoppingBag className="h-4 w-4" />
-                <Plus className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-amber-500 text-white" strokeWidth={4} />
-              </span>
+              <ShoppingCart className="h-4 w-4" />
               Thêm vào giỏ
             </button>
             <button

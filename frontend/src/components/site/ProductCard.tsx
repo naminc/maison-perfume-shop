@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart, Package, ShoppingBag, Plus } from "lucide-react";
+import { Heart, Package, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useStorefront } from "@/hooks/useStorefront";
 import { formatVnd, hasProductSale, productOriginalPrice, productPrice } from "@/lib/product-utils";
@@ -100,10 +100,7 @@ export default function ProductCard({ product, onToggleWishlist, inWishlist }: P
           >
             {inStock ? (
               <>
-                <span className="relative inline-flex">
-                  <ShoppingBag className="h-3.5 w-3.5" />
-                  <Plus className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-amber-500 text-white" strokeWidth={4} />
-                </span>
+                <ShoppingCart className="h-3.5 w-3.5" />
                 Thêm vào giỏ
               </>
             ) : (

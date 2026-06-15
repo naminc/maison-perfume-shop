@@ -61,4 +61,29 @@ class OrderController extends BaseController
 
         return api_success(data: $payload['order'], message: 'Lấy chi tiết đơn hàng thành công.');
     }
+
+    public function cancel(Request $request, string $order)
+    {
+        $result = $this->orderService->cancelUserOrder($request->user(), $order);
+
+        if (! $result['ok']) {
+            if (($result['exception'] ?? null) instanceof ValidationException) {
+                return api_validation_error($result['exception']->errors());
+            }
+
+            return api_error('Không thể huỷ đơn hàng. Vui lòng thử lại sau.', 500);
+        }
+
+        $payload = $result['data'];
+
+        if (! $payload['found']) {
+            return api_error('Không tìm thấy đơn hàng.', 404);
+        }
+
+        if ($payload['forbidden']) {
+            return api_error('Bạn không có quyền huỷ đơn hàng này.', 403);
+        }
+
+        return api_success(data: $payload['order'], message: 'Huỷ đơn hàng thành công.');
+    }
 }

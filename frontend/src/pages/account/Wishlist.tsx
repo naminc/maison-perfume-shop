@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart, Package, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { Heart, Package, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import AccountLayout from "@/layouts/AccountLayout";
 import { useProducts } from "@/hooks/useProducts";
@@ -59,10 +59,7 @@ export default function Wishlist() {
                   >
                     {product.stock > 0 ? (
                       <>
-                        <span className="relative inline-flex">
-                          <ShoppingBag className="h-3.5 w-3.5" />
-                          <Plus className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-amber-500 text-white" strokeWidth={4} />
-                        </span>
+                        <ShoppingCart className="h-3.5 w-3.5" />
                         Thêm vào giỏ
                       </>
                     ) : "Hết hàng"}

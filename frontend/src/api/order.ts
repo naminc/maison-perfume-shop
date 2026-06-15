@@ -27,4 +27,7 @@ export const orderApi = {
 
   getMyOrder: (order: string) =>
     api.get<{ data: Order }>(`/v1/orders/${order}`).then(unwrap),
+
+  cancelMyOrder: (order: string) =>
+    api.patch<{ data: Order }>(`/v1/account/orders/${order}/cancel`).then(unwrap),
 };

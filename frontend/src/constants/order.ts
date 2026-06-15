@@ -80,8 +80,8 @@ export const PAYMENT_STATUS_BADGE_CLASS: Record<PaymentStatus, string> = {
 export const ORDER_NEXT_STATUS: Record<OrderStatus, OrderStatus[]> = {
   pending: ["confirmed", "cancelled"],
   confirmed: ["processing", "cancelled"],
-  processing: ["shipping", "cancelled"],
-  shipping: ["completed", "cancelled"],
+  processing: ["shipping"],
+  shipping: ["completed"],
   completed: [],
   cancelled: [],
 };

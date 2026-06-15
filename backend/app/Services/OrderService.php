@@ -11,10 +11,14 @@ use App\Models\Product;
 use App\Models\Province;
 use App\Models\User;
 use App\Models\Ward;
+use App\Notifications\Order\OrderPlacedNotification;
+use App\Notifications\Order\OrderStatusUpdatedNotification;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
 use App\Services\Interfaces\OrderServiceInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class OrderService extends BaseService implements OrderServiceInterface
 {
@@ -28,8 +32,8 @@ class OrderService extends BaseService implements OrderServiceInterface
     private const STATUS_TRANSITIONS = [
         'pending'    => ['confirmed', 'cancelled'],
         'confirmed'  => ['processing', 'cancelled'],
-        'processing' => ['shipping', 'cancelled'],
-        'shipping'   => ['completed', 'cancelled'],
+        'processing' => ['shipping'],
+        'shipping'   => ['completed'],
         'completed'  => [],
         'cancelled'  => [],
     ];
@@ -40,7 +44,7 @@ class OrderService extends BaseService implements OrderServiceInterface
 
     public function createFromCheckout(User $user, array $payload): array
     {
-        return $this->executeTransaction(function () use ($user, $payload) {
+        $result = $this->executeTransaction(function () use ($user, $payload) {
             $items = $this->normalizeItems($payload['items'] ?? []);
             $products = $this->lockProductsForItems($items);
             $province = Province::query()->find((string) $payload['province_code']);
@@ -85,6 +89,12 @@ class OrderService extends BaseService implements OrderServiceInterface
 
             return $this->orderRepository->getOrderWithItems($order);
         }, 'createFromCheckout');
+
+        if ($result['ok']) {
+            $this->notifyOrderPlaced($result['data']);
+        }
+
+        return $result;
     }
 
     private function formatWardDisplayName(?Ward $ward, ?Province $province): ?string
@@ -124,6 +134,37 @@ class OrderService extends BaseService implements OrderServiceInterface
         }, 'getUserOrder');
     }
 
+    public function cancelUserOrder(User $user, string $order): array
+    {
+        $statusChanged = false;
+
+        $result = $this->executeTransaction(function () use ($user, $order, &$statusChanged) {
+            $found = $this->resolveLockedOrder($order);
+
+            if (! $found) {
+                return ['found' => false, 'forbidden' => false];
+            }
+
+            if ($found->user_id !== $user->id) {
+                return ['found' => true, 'forbidden' => true];
+            }
+
+            $statusChanged = $this->statusValue($found) !== OrderStatus::Cancelled->value;
+
+            return [
+                'found' => true,
+                'forbidden' => false,
+                'order' => $this->transitionOrder($found, OrderStatus::Cancelled->value),
+            ];
+        }, 'cancelUserOrder');
+
+        if ($result['ok'] && $statusChanged && ($result['data']['found'] ?? false) && ! ($result['data']['forbidden'] ?? false)) {
+            $this->notifyOrderStatusUpdated($result['data']['order']);
+        }
+
+        return $result;
+    }
+
     public function getPaginated(array $filters): array
     {
         return $this->executeSafe(function () use ($filters) {
@@ -140,46 +181,29 @@ class OrderService extends BaseService implements OrderServiceInterface
 
     public function updateStatus(string $order, array $data): array
     {
-        return $this->executeTransaction(function () use ($order, $data) {
+        $statusChanged = false;
+
+        $result = $this->executeTransaction(function () use ($order, $data, &$statusChanged) {
             $found = $this->resolveLockedOrder($order);
 
             if (! $found) {
                 return ['found' => false];
             }
 
-            $currentStatus = $this->statusValue($found);
             $nextStatus = (string) $data['status'];
-
-            if ($currentStatus === $nextStatus) {
-                return ['found' => true, 'order' => $this->orderRepository->getOrderWithItems($found)];
-            }
-
-            if (! in_array($nextStatus, self::STATUS_TRANSITIONS[$currentStatus] ?? [], true)) {
-                throw ValidationException::withMessages([
-                    'status' => 'Không thể chuyển trạng thái đơn hàng theo luồng này.',
-                ]);
-            }
-
-            $updateData = ['status' => $nextStatus];
-
-            if ($nextStatus === OrderStatus::Cancelled->value) {
-                $this->restoreStock($found);
-                $updateData['cancelled_at'] = now();
-            }
-
-            if ($nextStatus === OrderStatus::Completed->value) {
-                $updateData['completed_at'] = now();
-
-                if ($this->paymentMethodValue($found) === PaymentMethod::Cod->value) {
-                    $updateData['payment_status'] = PaymentStatus::Paid->value;
-                }
-            }
+            $statusChanged = $this->statusValue($found) !== $nextStatus;
 
             return [
                 'found' => true,
-                'order' => $this->orderRepository->update($found, $updateData),
+                'order' => $this->transitionOrder($found, $nextStatus),
             ];
         }, 'updateStatus');
+
+        if ($result['ok'] && $statusChanged && ($result['data']['found'] ?? false)) {
+            $this->notifyOrderStatusUpdated($result['data']['order']);
+        }
+
+        return $result;
     }
 
     public function delete(string $order): array
@@ -317,6 +341,82 @@ class OrderService extends BaseService implements OrderServiceInterface
                 ->lockForUpdate()
                 ->increment('stock', $item->quantity);
         }
+    }
+
+    private function transitionOrder(Order $order, string $nextStatus): Order
+    {
+        $currentStatus = $this->statusValue($order);
+
+        if ($currentStatus === $nextStatus) {
+            return $this->orderRepository->getOrderWithItems($order);
+        }
+
+        if (! in_array($nextStatus, self::STATUS_TRANSITIONS[$currentStatus] ?? [], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Không thể chuyển trạng thái đơn hàng theo luồng này.',
+            ]);
+        }
+
+        $updateData = ['status' => $nextStatus];
+
+        if ($nextStatus === OrderStatus::Cancelled->value) {
+            $this->restoreStock($order);
+            $updateData['cancelled_at'] = now();
+        }
+
+        if ($nextStatus === OrderStatus::Completed->value) {
+            $updateData['completed_at'] = now();
+
+            if ($this->paymentMethodValue($order) === PaymentMethod::Cod->value) {
+                $updateData['payment_status'] = PaymentStatus::Paid->value;
+            }
+        }
+
+        return $this->orderRepository->update($order, $updateData);
+    }
+
+    private function notifyOrderPlaced(Order $order): void
+    {
+        $this->notifyOrderRecipient($order, new OrderPlacedNotification($order), 'notifyOrderPlaced');
+    }
+
+    private function notifyOrderStatusUpdated(Order $order): void
+    {
+        $this->notifyOrderRecipient($order, new OrderStatusUpdatedNotification($order), 'notifyOrderStatusUpdated');
+    }
+
+    private function notifyOrderRecipient(Order $order, object $notification, string $context): void
+    {
+        $email = $this->orderRecipientEmail($order);
+
+        if (! $email) {
+            $this->logWarning('Skip order email notification because recipient email is missing or invalid.', [
+                'order_id' => $order->id,
+                'order_code' => $order->order_code,
+                'context' => $context,
+            ]);
+
+            return;
+        }
+
+        try {
+            Notification::route('mail', $email)->notify($notification);
+        } catch (Throwable $e) {
+            $this->logError($e, $context);
+        }
+    }
+
+    private function orderRecipientEmail(Order $order): ?string
+    {
+        $order->loadMissing(['user:id,email']);
+
+        foreach ([$order->customer_email, $order->user?->email] as $email) {
+            if (is_string($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return $email;
+            }
+        }
+
+        return null;
     }
 
     private function resolveOrder(string $order): ?Order
