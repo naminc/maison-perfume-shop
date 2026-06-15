@@ -73,6 +73,11 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function productReviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class);
+    }
+
     public function getWardNameAttribute($value): ?string
     {
         $wardName = is_string($value) ? trim($value) : $value;

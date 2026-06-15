@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { AxiosError } from "axios";
-import { Check, CreditCard, MapPin, Package, Phone, Printer, RotateCcw, Truck } from "lucide-react";
+import { Check, CreditCard, MapPin, Package, Phone, Printer, RotateCcw, Star, Truck } from "lucide-react";
 import { toast } from "sonner";
 import AccountLayout from "@/layouts/AccountLayout";
 import {
@@ -17,6 +17,16 @@ import {
 import { ButtonSpinner } from "@/components/shared/ButtonSpinner";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
   ORDER_STATUS_BADGE_CLASS,
   ORDER_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -24,12 +34,14 @@ import {
   PAYMENT_STATUS_LABELS,
 } from "@/constants/order";
 import { useCancelOrder, useMyOrder } from "@/hooks/useOrders";
+import { useCreateProductReview, useReviewableItems } from "@/hooks/useProductReviews";
 import { formatAddressParts } from "@/lib/address-format";
 import { formatDateTime } from "@/lib/date-time";
 import { formatVietnamPhone } from "@/lib/phone";
 import { formatVnd } from "@/lib/product-utils";
 import type { ApiErrorResponse } from "@/types/auth";
 import type { Order, OrderStatus } from "@/types/order";
+import type { ReviewableItem } from "@/types/product-review";
 
 const TRACKER_STEPS: Array<{ id: OrderStatus; label: string }> = [
   { id: "pending", label: "Đã đặt hàng" },
@@ -50,8 +62,14 @@ const STEP_INDEX: Partial<Record<OrderStatus, number>> = {
 export default function OrderDetail() {
   const { id } = useParams();
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [reviewingItem, setReviewingItem] = useState<ReviewableItem | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewContent, setReviewContent] = useState("");
   const orderQuery = useMyOrder(id);
+  const reviewableItemsQuery = useReviewableItems();
   const cancelOrder = useCancelOrder();
+  const createReview = useCreateProductReview();
   const order = orderQuery.data;
 
   if (orderQuery.isLoading) {
@@ -80,6 +98,9 @@ export default function OrderDetail() {
   }
 
   const canCancel = order.status === "pending" || order.status === "confirmed";
+  const reviewableByOrderItemId = new Map(
+    (reviewableItemsQuery.data ?? []).map((item) => [item.order_item_id, item]),
+  );
 
   const confirmCancel = () => {
     if (!order) return;
@@ -93,6 +114,36 @@ export default function OrderDetail() {
         toast.error(getApiErrorMessage(error, "Huỷ đơn hàng thất bại."));
       },
     });
+  };
+
+  const openReviewDialog = (item: ReviewableItem) => {
+    setReviewingItem(item);
+    setReviewRating(5);
+    setReviewTitle("");
+    setReviewContent("");
+  };
+
+  const submitReview = () => {
+    if (!reviewingItem) return;
+
+    createReview.mutate(
+      {
+        product_id: reviewingItem.product_id,
+        order_item_id: reviewingItem.order_item_id,
+        rating: reviewRating,
+        title: reviewTitle.trim() || null,
+        content: reviewContent.trim() || null,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Đánh giá đang chờ duyệt.");
+          setReviewingItem(null);
+        },
+        onError: (error) => {
+          toast.error(getApiErrorMessage(error, "Gửi đánh giá thất bại."));
+        },
+      },
+    );
   };
 
   return (
@@ -126,6 +177,16 @@ export default function OrderDetail() {
                     <p className="text-xs text-stone-500">
                       {[item.concentration, item.volume_ml ? `${item.volume_ml}ml` : null, item.brand_name].filter(Boolean).join(" · ")} × {item.quantity}
                     </p>
+                    {order.status === "completed" && item.product_id && reviewableByOrderItemId.has(item.id) && (
+                      <button
+                        type="button"
+                        onClick={() => openReviewDialog(reviewableByOrderItemId.get(item.id) as ReviewableItem)}
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100"
+                      >
+                        <Star className="h-3.5 w-3.5" />
+                        Đánh giá
+                      </button>
+                    )}
                   </div>
                   <div className="whitespace-nowrap text-sm font-semibold">{formatVnd(item.line_total)}</div>
                 </li>
@@ -206,6 +267,66 @@ export default function OrderDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={Boolean(reviewingItem)} onOpenChange={(open) => !open && setReviewingItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Đánh giá sản phẩm</DialogTitle>
+            <DialogDescription>
+              {reviewingItem?.product_name ?? "Sản phẩm trong đơn hàng đã hoàn thành."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-stone-700">Số sao</label>
+              <div className="mt-2 flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewRating(star)}
+                    className="rounded-md p-1 text-amber-500 transition-colors hover:bg-amber-50"
+                    aria-label={`${star} sao`}
+                  >
+                    <Star className={`h-6 w-6 ${star <= reviewRating ? "fill-amber-500" : "text-stone-300"}`} />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-stone-700" htmlFor="review-title">Tiêu đề</label>
+              <Input
+                id="review-title"
+                value={reviewTitle}
+                onChange={(event) => setReviewTitle(event.target.value)}
+                maxLength={120}
+                placeholder="Ví dụ: Mùi rất dễ dùng"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-stone-700" htmlFor="review-content">Nội dung</label>
+              <Textarea
+                id="review-content"
+                value={reviewContent}
+                onChange={(event) => setReviewContent(event.target.value)}
+                maxLength={2000}
+                placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."
+                className="mt-1 min-h-28"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReviewingItem(null)} disabled={createReview.isPending}>
+              Huỷ
+            </Button>
+            <Button onClick={submitReview} disabled={createReview.isPending} className="gap-1.5">
+              {createReview.isPending && <ButtonSpinner />}
+              Gửi đánh giá
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AccountLayout>
   );
 }

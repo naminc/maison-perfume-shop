@@ -1,18 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { Heart, Minus, Plus, Truck, ShieldCheck, RotateCcw, ShoppingCart, PackageSearch } from "lucide-react";
+import { Heart, Minus, Plus, Truck, ShieldCheck, RotateCcw, ShoppingCart, PackageSearch, Star } from "lucide-react";
 import { toast } from "sonner";
 import ContentPage from "@/components/site/ContentPage";
 import ProductCard from "@/components/site/ProductCard";
 import { PRODUCT_GENDER_LABELS } from "@/constants/product";
+import { PUBLIC_PRODUCT_REVIEW_PAGE_SIZE } from "@/constants/product-review";
 import { useProducts, useProductBySlug } from "@/hooks/useProducts";
+import { useProductReviews, useProductReviewSummary } from "@/hooks/useProductReviews";
 import { useStorefront } from "@/hooks/useStorefront";
+import { formatDateTime } from "@/lib/date-time";
 import { formatVnd, hasProductSale, productOriginalPrice, productPrice } from "@/lib/product-utils";
+import type { ProductReview } from "@/types/product-review";
 
 export default function ProductDetail() {
   const { slug = "" } = useParams();
   const navigate = useNavigate();
   const productQuery = useProductBySlug(slug);
+  const reviewSummaryQuery = useProductReviewSummary(slug);
+  const reviewsQuery = useProductReviews(slug, { per_page: PUBLIC_PRODUCT_REVIEW_PAGE_SIZE });
   const product = productQuery.data;
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<"desc" | "details">("desc");
@@ -66,6 +72,8 @@ export default function ProductDetail() {
   const inStock = product.stock > 0;
   const hasSale = hasProductSale(product);
   const liked = isInWishlist(product.id);
+  const ratingAverage = Number(reviewSummaryQuery.data?.rating_average ?? product.rating_average ?? 0);
+  const ratingCount = Number(reviewSummaryQuery.data?.rating_count ?? product.rating_count ?? 0);
 
   const handleAddToCart = () => {
     if (!inStock) return;
@@ -100,6 +108,11 @@ export default function ProductDetail() {
         <div>
           <div className="text-xs uppercase tracking-wider text-stone-500">{product.brand?.name ?? "Maison"}</div>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{product.name}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-stone-600">
+            <RatingStars rating={ratingAverage} size="sm" />
+            <span className="font-medium text-stone-900">{ratingAverage > 0 ? ratingAverage.toFixed(1) : "Chưa có đánh giá"}</span>
+            {ratingCount > 0 && <span className="text-stone-500">({ratingCount} đánh giá)</span>}
+          </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-stone-600">
             {product.sku && <span className="font-mono text-xs text-stone-500">SKU: {product.sku}</span>}
@@ -208,6 +221,24 @@ export default function ProductDetail() {
         </div>
       </div>
 
+      <section className="mt-12 rounded-2xl border border-stone-200 bg-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold">Đánh giá sản phẩm</h2>
+            <p className="mt-1 text-sm text-stone-500">
+              {ratingCount > 0 ? `${ratingCount} đánh giá đã được duyệt` : "Sản phẩm chưa có đánh giá được duyệt."}
+            </p>
+          </div>
+          {ratingCount > 0 && (
+            <div className="text-right">
+              <div className="text-2xl font-semibold text-stone-900">{ratingAverage.toFixed(1)}</div>
+              <RatingStars rating={ratingAverage} />
+            </div>
+          )}
+        </div>
+        <ProductReviewsList reviews={reviewsQuery.data?.data ?? []} isLoading={reviewsQuery.isLoading} isError={reviewsQuery.isError} />
+      </section>
+
       {related.length > 0 && (
         <section className="mt-12">
           <h2 className="mb-5 text-xl font-semibold">Có thể bạn cũng thích</h2>
@@ -217,6 +248,65 @@ export default function ProductDetail() {
         </section>
       )}
     </ContentPage>
+  );
+}
+
+function ProductReviewsList({ reviews, isLoading, isError }: { reviews: ProductReview[]; isLoading: boolean; isError: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="mt-5 space-y-3">
+        {[1, 2, 3].map((item) => (
+          <div key={item} className="h-24 animate-pulse rounded-xl bg-stone-100" />
+        ))}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">Không thể tải đánh giá. Vui lòng thử lại sau.</p>;
+  }
+
+  if (reviews.length === 0) {
+    return (
+      <div className="mt-5 rounded-xl border border-dashed border-stone-200 p-8 text-center text-sm text-stone-500">
+        Chưa có đánh giá nào cho sản phẩm này.
+      </div>
+    );
+  }
+
+  return (
+    <ul className="mt-5 divide-y divide-stone-100">
+      {reviews.map((review) => (
+        <li key={review.id} className="py-4 first:pt-0 last:pb-0">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="font-medium text-stone-900">{review.user?.full_name ?? "Khách hàng Maison"}</div>
+              <div className="mt-1 flex items-center gap-2">
+                <RatingStars rating={review.rating} size="sm" />
+                <span className="text-xs text-stone-500">{formatDateTime(review.created_at)}</span>
+              </div>
+            </div>
+          </div>
+          {review.title && <h3 className="mt-3 text-sm font-semibold text-stone-900">{review.title}</h3>}
+          {review.content && <p className="mt-1 text-sm leading-6 text-stone-600">{review.content}</p>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function RatingStars({ rating, size = "md" }: { rating: number; size?: "sm" | "md" }) {
+  const iconClass = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
+
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-label={`${rating} sao`}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`${iconClass} ${star <= Math.round(rating) ? "fill-amber-500 text-amber-500" : "text-stone-300"}`}
+        />
+      ))}
+    </span>
   );
 }
 

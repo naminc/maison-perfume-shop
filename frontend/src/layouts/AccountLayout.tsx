@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
-import { User, Package, MapPin, Heart, LogOut, Settings, ShieldCheck, Store } from "lucide-react";
+import { Heart, LogOut, MapPin, MessageSquare, Package, Settings, ShieldCheck, Store, User } from "lucide-react";
 import { toast } from "sonner";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
@@ -8,13 +8,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getInitials } from "@/lib/utils";
 
 const NAV = [
-  { to: "/account",           label: "Tổng quan",           icon: User,        end: true },
-  { to: "/account/profile",   label: "Thông tin tài khoản", icon: Settings },
-  { to: "/account/security",  label: "Bảo mật",              icon: ShieldCheck },
-  { to: "/account/addresses", label: "Địa chỉ giao hàng",   icon: MapPin },
-  { to: "/account/orders",    label: "Đơn hàng của tôi",    icon: Package },
-  { to: "/account/wishlist",  label: "Sản phẩm yêu thích",  icon: Heart },
-  
+  { to: "/account",           label: "Tổng quan",              icon: User,        end: true },
+  { to: "/account/profile",   label: "Thông tin tài khoản",    icon: Settings },
+  { to: "/account/security",  label: "Bảo mật",                icon: ShieldCheck },
+  { to: "/account/addresses", label: "Địa chỉ giao hàng",      icon: MapPin },
+  { to: "/account/orders",    label: "Đơn hàng của tôi",       icon: Package },
+  { to: "/account/reviews",   label: "Đánh giá của tôi",       icon: MessageSquare },
+  { to: "/account/wishlist",  label: "Sản phẩm yêu thích",     icon: Heart },
 ];
 
 interface Props {
@@ -30,7 +30,7 @@ export default function AccountLayout({ title, subtitle, children }: Props) {
     await logout().then(() => toast.success("Đăng xuất thành công, hẹn gặp lại!"));
   };
 
-  const initials = user ? getInitials(user.full_name) : '';
+  const initials = user ? getInitials(user.full_name) : "";
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900">
@@ -50,10 +50,7 @@ export default function AccountLayout({ title, subtitle, children }: Props) {
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
         <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
-
-          {/* Sidebar */}
           <aside className="space-y-4">
-            {/* User card */}
             <div className="rounded-xl border border-stone-200 bg-white p-5">
               {isLoading ? (
                 <div className="flex items-center gap-3">
@@ -76,7 +73,6 @@ export default function AccountLayout({ title, subtitle, children }: Props) {
               )}
             </div>
 
-            {/* Nav */}
             <nav className="rounded-xl border border-stone-200 bg-white p-2">
               {NAV.map(({ to, label, icon: Icon, end }) => (
                 <NavLink
@@ -111,7 +107,6 @@ export default function AccountLayout({ title, subtitle, children }: Props) {
             </nav>
           </aside>
 
-          {/* Content */}
           <section className="min-w-0 space-y-6">
             <header>
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>

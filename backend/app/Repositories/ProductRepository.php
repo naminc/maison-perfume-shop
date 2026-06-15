@@ -19,6 +19,8 @@ class ProductRepository implements ProductRepositoryInterface
 
         return $this->baseFilteredQuery($filters)
             ->with(['brand:id,name', 'category:id,name'])
+            ->withCount('approvedReviews as rating_count')
+            ->withAvg('approvedReviews as rating_average', 'rating')
             ->orderBy('sort_order')
             ->orderBy('name')
             ->paginate($perPage);
@@ -29,6 +31,8 @@ class ProductRepository implements ProductRepositoryInterface
         return $this->model
             ->newQuery()
             ->with(['brand:id,name', 'category:id,name'])
+            ->withCount('approvedReviews as rating_count')
+            ->withAvg('approvedReviews as rating_average', 'rating')
             ->find($id);
     }
 
@@ -37,6 +41,8 @@ class ProductRepository implements ProductRepositoryInterface
         return $this->model
             ->newQuery()
             ->with(['brand:id,name,slug', 'category:id,name,slug'])
+            ->withCount('approvedReviews as rating_count')
+            ->withAvg('approvedReviews as rating_average', 'rating')
             ->active()
             ->where('slug', $slug)
             ->first();
@@ -66,6 +72,8 @@ class ProductRepository implements ProductRepositoryInterface
 
         return $this->baseFilteredQuery($filters)
             ->with(['brand:id,name,slug', 'category:id,name,slug'])
+            ->withCount('approvedReviews as rating_count')
+            ->withAvg('approvedReviews as rating_average', 'rating')
             ->active()
             ->orderByDesc('is_featured')
             ->orderBy('sort_order')

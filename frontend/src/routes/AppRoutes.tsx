@@ -17,6 +17,7 @@ const AccountOverview = lazy(() => import("@/pages/account/AccountOverview"));
 const Profile = lazy(() => import("@/pages/account/Profile"));
 const Orders = lazy(() => import("@/pages/account/Orders"));
 const OrderDetail = lazy(() => import("@/pages/account/OrderDetail"));
+const AccountReviews = lazy(() => import("@/pages/account/Reviews"));
 const Addresses = lazy(() => import("@/pages/account/Addresses"));
 const Wishlist = lazy(() => import("@/pages/account/Wishlist"));
 const Security = lazy(() => import("@/pages/account/Security"));
@@ -27,6 +28,7 @@ const Categories = lazy(() => import("@/pages/admin/Categories"));
 const Brands = lazy(() => import("@/pages/admin/Brands"));
 const Catalog = lazy(() => import("@/pages/admin/Catalog"));
 const Products = lazy(() => import("@/pages/admin/Products"));
+const AdminProductReviews = lazy(() => import("@/pages/admin/ProductReviews"));
 const AdminOrders = lazy(() => import("@/pages/admin/Orders"));
 const Contacts = lazy(() => import("@/pages/admin/Contacts"));
 const Users = lazy(() => import("@/pages/admin/Users"));
@@ -69,6 +71,7 @@ export function AppRoutes() {
           <Route path="/account/profile" element={<RequireAuth><Profile /></RequireAuth>} />
           <Route path="/account/orders" element={<RequireAuth><Orders /></RequireAuth>} />
           <Route path="/account/orders/:id" element={<RequireAuth><OrderDetail /></RequireAuth>} />
+          <Route path="/account/reviews" element={<RequireAuth><AccountReviews /></RequireAuth>} />
           <Route path="/account/addresses" element={<RequireAuth><Addresses /></RequireAuth>} />
           <Route path="/account/wishlist" element={<RequireAuth><Wishlist /></RequireAuth>} />
           <Route path="/account/security" element={<RequireAuth><Security /></RequireAuth>} />
@@ -99,6 +102,7 @@ export function AppRoutes() {
             <Route path="brands" element={<Brands />} />
             <Route path="catalog" element={<Catalog />} />
             <Route path="products" element={<Products />} />
+            <Route path="product-reviews" element={<AdminProductReviews />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="contacts" element={<Contacts />} />
             <Route path="users" element={<Users />} />

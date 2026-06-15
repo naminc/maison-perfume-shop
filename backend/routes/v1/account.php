@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Account\AddressController;
 use App\Http\Controllers\Api\V1\Account\PasswordController;
 use App\Http\Controllers\Api\V1\Account\ProfileController;
+use App\Http\Controllers\Api\V1\Account\ProductReviewController;
 use App\Http\Controllers\Api\V1\Account\SessionController;
 use App\Http\Controllers\Api\V1\OrderController;
 use Illuminate\Support\Facades\Route;
@@ -24,4 +25,8 @@ Route::prefix('account')->name('account.')->group(function () {
     Route::patch('addresses/{id}/default', [AddressController::class, 'setDefault'])->name('addresses.set-default');
 
     Route::patch('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+
+    Route::get('reviews', [ProductReviewController::class, 'index'])->name('reviews.index');
+    Route::get('reviewable-items', [ProductReviewController::class, 'reviewableItems'])->name('reviews.reviewable-items');
+    Route::post('reviews', [ProductReviewController::class, 'store'])->name('reviews.store');
 });

@@ -32,6 +32,8 @@ export interface Product {
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
+  rating_average?: number | string | null;
+  rating_count?: number;
   brand?: ProductRelation | null;
   category?: ProductRelation | null;
 }

@@ -1,10 +1,13 @@
 const ADMIN_CATEGORIES_KEY = ['admin', 'categories'] as const;
 const ADMIN_BRANDS_KEY = ['admin', 'brands'] as const;
 const ADMIN_PRODUCTS_KEY = ['admin', 'products'] as const;
+const ADMIN_PRODUCT_REVIEWS_KEY = ['admin', 'product-reviews'] as const;
 const ADMIN_ORDERS_KEY = ['admin', 'orders'] as const;
 const ADMIN_USERS_KEY = ['admin', 'users'] as const;
 const ACCOUNT_ORDERS_KEY = ['account', 'orders'] as const;
+const ACCOUNT_PRODUCT_REVIEWS_KEY = ['account', 'product-reviews'] as const;
 const PRODUCTS_KEY = ['products'] as const;
+const PRODUCT_REVIEWS_KEY = ['product-reviews'] as const;
 
 export const QUERY_KEYS = {
   admin: {
@@ -23,6 +26,11 @@ export const QUERY_KEYS = {
       all: ADMIN_PRODUCTS_KEY,
       list:   (params: Record<string, unknown> = {}) => [...ADMIN_PRODUCTS_KEY, 'list', params] as const,
       detail: (id: number | string) => [...ADMIN_PRODUCTS_KEY, 'detail', id] as const,
+    },
+    productReviews: {
+      all: ADMIN_PRODUCT_REVIEWS_KEY,
+      list:   (params: Record<string, unknown> = {}) => [...ADMIN_PRODUCT_REVIEWS_KEY, 'list', params] as const,
+      detail: (id: number | string) => [...ADMIN_PRODUCT_REVIEWS_KEY, 'detail', id] as const,
     },
     orders: {
       all: ADMIN_ORDERS_KEY,
@@ -44,6 +52,11 @@ export const QUERY_KEYS = {
       list:   (params: Record<string, unknown> = {}) => [...ACCOUNT_ORDERS_KEY, 'list', params] as const,
       detail: (id: number | string) => [...ACCOUNT_ORDERS_KEY, 'detail', id] as const,
     },
+    productReviews: {
+      all: ACCOUNT_PRODUCT_REVIEWS_KEY,
+      list:   (params: Record<string, unknown> = {}) => [...ACCOUNT_PRODUCT_REVIEWS_KEY, 'list', params] as const,
+      reviewableItems: ['account', 'reviewable-items'] as const,
+    },
   },
   geo: {
     provinces: ['geo', 'provinces'] as const,
@@ -59,6 +72,11 @@ export const QUERY_KEYS = {
     all: PRODUCTS_KEY,
     list:   (params: Record<string, unknown> = {}) => [...PRODUCTS_KEY, 'list', params] as const,
     detail: (slug: string) => [...PRODUCTS_KEY, 'detail', slug] as const,
+  },
+  productReviews: {
+    all: PRODUCT_REVIEWS_KEY,
+    list:    (slug: string, params: Record<string, unknown> = {}) => [...PRODUCT_REVIEWS_KEY, slug, 'list', params] as const,
+    summary: (slug: string) => [...PRODUCT_REVIEWS_KEY, slug, 'summary'] as const,
   },
   settings: {
     public: ['settings', 'public'] as const,
