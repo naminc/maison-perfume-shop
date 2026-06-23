@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Admin\CategoryController;
 use App\Http\Controllers\Api\V1\Admin\BrandController;
+use App\Http\Controllers\Api\V1\Admin\CouponController;
 use App\Http\Controllers\Api\V1\Admin\OrderController;
 use App\Http\Controllers\Api\V1\Admin\ProductController;
 use App\Http\Controllers\Api\V1\Admin\ProductReviewController;
@@ -13,6 +14,7 @@ Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('brands', BrandController::class);
     Route::apiResource('products', ProductController::class);
+    Route::apiResource('coupons', CouponController::class);
     Route::get('product-reviews', [ProductReviewController::class, 'index'])->name('product-reviews.index');
     Route::get('product-reviews/{productReview}', [ProductReviewController::class, 'show'])->name('product-reviews.show');
     Route::patch('product-reviews/{productReview}/approve', [ProductReviewController::class, 'approve'])->name('product-reviews.approve');

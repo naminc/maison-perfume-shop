@@ -1,5 +1,6 @@
 import {
   BadgeCheck,
+  BadgePercent,
   LayoutDashboard,
   Mail,
   MessageSquare,
@@ -22,6 +23,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: "Danh mục", href: "/admin/categories", icon: Tags },
   { label: "Thương hiệu", href: "/admin/brands", icon: BadgeCheck },
   { label: "Sản phẩm", href: "/admin/products", icon: Package },
+  { label: "Mã giảm giá", href: "/admin/coupons", icon: BadgePercent },
   { label: "Đánh giá", href: "/admin/product-reviews", icon: MessageSquare },
   { label: "Đơn hàng", href: "/admin/orders", icon: ShoppingCart },
   { label: "Liên hệ", href: "/admin/contacts", icon: Mail },

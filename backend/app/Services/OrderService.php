@@ -14,6 +14,7 @@ use App\Models\Ward;
 use App\Notifications\Order\OrderPlacedNotification;
 use App\Notifications\Order\OrderStatusUpdatedNotification;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
+use App\Services\Interfaces\CouponServiceInterface;
 use App\Services\Interfaces\OrderServiceInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
@@ -22,7 +23,6 @@ use Throwable;
 
 class OrderService extends BaseService implements OrderServiceInterface
 {
-    private const COUPON_MAISON10 = 'MAISON10';
     private const STANDARD_SHIPPING_METHOD = 'standard';
     private const EXPRESS_SHIPPING_METHOD = 'express';
     private const FREE_SHIPPING_THRESHOLD = 500000;
@@ -40,6 +40,7 @@ class OrderService extends BaseService implements OrderServiceInterface
 
     public function __construct(
         protected OrderRepositoryInterface $orderRepository,
+        protected CouponServiceInterface $couponService,
     ) {}
 
     public function createFromCheckout(User $user, array $payload): array
@@ -54,9 +55,16 @@ class OrderService extends BaseService implements OrderServiceInterface
                 ->first();
 
             [$orderItems, $subtotal] = $this->buildOrderItems($items, $products);
-            $couponCode = $this->normalizeCoupon($payload['coupon_code'] ?? null);
-            $discountTotal = $this->calculateDiscount($couponCode, $subtotal);
             $shippingFee = $this->calculateShippingFee($payload['shipping_method'] ?? self::STANDARD_SHIPPING_METHOD, $subtotal);
+            $couponPreview = $this->couponService->previewForOrder(
+                $user,
+                $payload['coupon_code'] ?? null,
+                $subtotal,
+                $shippingFee,
+                true,
+            );
+            $couponCode = $couponPreview['coupon_code'];
+            $discountTotal = $couponPreview['discount_total'];
             $total = max(0, $subtotal + $shippingFee - $discountTotal);
 
             $order = $this->orderRepository->create([
@@ -85,6 +93,10 @@ class OrderService extends BaseService implements OrderServiceInterface
 
             foreach ($items as $productId => $quantity) {
                 $products->get($productId)->decrement('stock', $quantity);
+            }
+
+            if ($couponPreview['coupon']) {
+                $this->couponService->markAsUsed($couponPreview['coupon']);
             }
 
             return $this->orderRepository->getOrderWithItems($order);
@@ -307,15 +319,6 @@ class OrderService extends BaseService implements OrderServiceInterface
         return [$orderItems, $subtotal];
     }
 
-    private function calculateDiscount(?string $couponCode, float $subtotal): float
-    {
-        if ($couponCode === self::COUPON_MAISON10) {
-            return round($subtotal * 0.1);
-        }
-
-        return 0.0;
-    }
-
     private function calculateShippingFee(string $shippingMethod, float $subtotal): float
     {
         if ($shippingMethod === self::EXPRESS_SHIPPING_METHOD) {
@@ -361,6 +364,7 @@ class OrderService extends BaseService implements OrderServiceInterface
 
         if ($nextStatus === OrderStatus::Cancelled->value) {
             $this->restoreStock($order);
+            $this->couponService->restoreUsageByCode($order->coupon_code);
             $updateData['cancelled_at'] = now();
         }
 
@@ -435,13 +439,6 @@ class OrderService extends BaseService implements OrderServiceInterface
             ->when(ctype_digit($order), fn ($query) => $query->whereKey((int) $order), fn ($query) => $query->where('order_code', $order))
             ->lockForUpdate()
             ->first();
-    }
-
-    private function normalizeCoupon(mixed $value): ?string
-    {
-        $value = $this->nullableString($value);
-
-        return $value ? strtoupper($value) : null;
     }
 
     private function nullableString(mixed $value): ?string

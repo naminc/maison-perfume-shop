@@ -196,7 +196,13 @@ export default function OrderDetail() {
             <dl className="mt-5 space-y-2 border-t border-stone-200 pt-4 text-sm">
               <Row label="Tạm tính" value={formatVnd(order.subtotal)} />
               <Row label="Vận chuyển" value={Number(order.shipping_fee) === 0 ? "Miễn phí" : formatVnd(order.shipping_fee)} />
-              {Number(order.discount_total) > 0 && <Row label="Giảm giá" value={`-${formatVnd(order.discount_total)}`} accent />}
+              {Number(order.discount_total) > 0 && (
+                <Row
+                  label={order.coupon_code ? `Giảm giá (${order.coupon_code})` : "Giảm giá"}
+                  value={`-${formatVnd(order.discount_total)}`}
+                  accent
+                />
+              )}
               <div className="flex justify-between border-t border-stone-200 pt-2 text-base font-semibold">
                 <dt>Tổng cộng</dt>
                 <dd className="text-amber-700">{formatVnd(order.total)}</dd>

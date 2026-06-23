@@ -508,7 +508,12 @@ export default function Orders() {
               <dl className="space-y-2 rounded-md border border-border p-4 text-sm">
                 <SummaryRow label="Tạm tính" value={formatVnd(detailOrder.subtotal)} />
                 <SummaryRow label="Vận chuyển" value={Number(detailOrder.shipping_fee) === 0 ? "Miễn phí" : formatVnd(detailOrder.shipping_fee)} />
-                {Number(detailOrder.discount_total) > 0 && <SummaryRow label="Giảm giá" value={`-${formatVnd(detailOrder.discount_total)}`} />}
+                {Number(detailOrder.discount_total) > 0 && (
+                  <SummaryRow
+                    label={detailOrder.coupon_code ? `Giảm giá (${detailOrder.coupon_code})` : "Giảm giá"}
+                    value={`-${formatVnd(detailOrder.discount_total)}`}
+                  />
+                )}
                 <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
                   <dt>Tổng cộng</dt>
                   <dd>{formatVnd(detailOrder.total)}</dd>

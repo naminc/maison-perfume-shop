@@ -24,10 +24,6 @@ export function formatVnd(value: string | number | null | undefined) {
   }).format(Number.isFinite(amount) ? amount : 0);
 }
 
-export function calculateDiscount(couponCode: string, subtotal: number) {
-  return couponCode === "MAISON10" ? Math.round(subtotal * 0.1) : 0;
-}
-
 export function calculateStandardShipping(subtotal: number) {
   return subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING_FEE;
 }

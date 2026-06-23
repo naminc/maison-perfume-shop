@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             BrandSeeder::class,
             ProductSeeder::class,
+            CouponSeeder::class,
             ProductReviewSeeder::class,
             UserAddressSeeder::class,
         ]);

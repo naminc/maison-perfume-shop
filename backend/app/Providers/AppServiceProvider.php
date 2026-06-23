@@ -6,9 +6,11 @@ use Illuminate\Support\ServiceProvider;
 use App\Repositories\AddressRepository;
 use App\Repositories\BrandRepository;
 use App\Repositories\CategoryRepository;
+use App\Repositories\CouponRepository;
 use App\Repositories\Interfaces\AddressRepositoryInterface;
 use App\Repositories\Interfaces\BrandRepositoryInterface;
 use App\Repositories\Interfaces\CategoryRepositoryInterface;
+use App\Repositories\Interfaces\CouponRepositoryInterface;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
 use App\Repositories\Interfaces\ProductRepositoryInterface;
 use App\Repositories\Interfaces\ProductReviewRepositoryInterface;
@@ -23,10 +25,12 @@ use App\Services\AddressService;
 use App\Services\AuthService;
 use App\Services\BrandService;
 use App\Services\CategoryService;
+use App\Services\CouponService;
 use App\Services\Interfaces\AddressServiceInterface;
 use App\Services\Interfaces\AuthServiceInterface;
 use App\Services\Interfaces\BrandServiceInterface;
 use App\Services\Interfaces\CategoryServiceInterface;
+use App\Services\Interfaces\CouponServiceInterface;
 use App\Services\Interfaces\OrderServiceInterface;
 use App\Services\Interfaces\ProductServiceInterface;
 use App\Services\Interfaces\ProductReviewServiceInterface;
@@ -49,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
         CategoryServiceInterface::class => CategoryService::class,
         BrandServiceInterface::class    => BrandService::class,
         ProductServiceInterface::class  => ProductService::class,
+        CouponServiceInterface::class   => CouponService::class,
         ProductReviewServiceInterface::class => ProductReviewService::class,
         OrderServiceInterface::class    => OrderService::class,
         UserServiceInterface::class     => UserService::class,
@@ -60,6 +65,7 @@ class AppServiceProvider extends ServiceProvider
         CategoryRepositoryInterface::class => CategoryRepository::class,
         BrandRepositoryInterface::class    => BrandRepository::class,
         ProductRepositoryInterface::class  => ProductRepository::class,
+        CouponRepositoryInterface::class   => CouponRepository::class,
         ProductReviewRepositoryInterface::class => ProductReviewRepository::class,
         OrderRepositoryInterface::class    => OrderRepository::class,
     ];

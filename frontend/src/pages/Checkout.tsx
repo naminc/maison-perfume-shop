@@ -7,8 +7,10 @@ import {
   MapPin,
   Package,
   ShoppingBag,
+  TicketPercent,
   Truck,
   Wallet,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ import SiteFooter from "@/components/site/SiteFooter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAddresses } from "@/hooks/useAddressQueries";
 import { useCartProducts } from "@/hooks/useCartProducts";
+import { useValidateCoupon } from "@/hooks/useCoupons";
 import { useProvinces, useWards } from "@/hooks/useGeoQueries";
 import { useCreateOrder } from "@/hooks/useOrders";
 import { formatAddressParts, formatWardDisplayName } from "@/lib/address-format";
@@ -34,11 +37,11 @@ import { wasApiConnectionNotified } from "@/lib/api";
 import {
   FREE_SHIPPING_THRESHOLD,
   STANDARD_SHIPPING_FEE,
-  calculateDiscount,
   formatVnd,
 } from "@/lib/product-utils";
 import type { ApiErrorResponse } from "@/types/auth";
 import type { UserAddress } from "@/types/address";
+import type { ValidateCouponResponse } from "@/types/coupon";
 import type { OrderPayload, PaymentMethod, ShippingMethod } from "@/types/order";
 
 const NEW_ADDRESS_VALUE = "new";
@@ -64,7 +67,6 @@ export default function Checkout() {
   const {
     cart,
     cartCount,
-    couponCode,
     lines,
     purchasableLines,
     purchasableCount,
@@ -74,6 +76,7 @@ export default function Checkout() {
     clearCart,
   } = useCartProducts();
   const createOrder = useCreateOrder();
+  const validateCoupon = useValidateCoupon();
   const addressesQuery = useAddresses();
   const provincesQuery = useProvinces();
   const didInitializeAddress = useRef(false);
@@ -88,6 +91,9 @@ export default function Checkout() {
   const [selectedWardCode, setSelectedWardCode] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
   const [note, setNote] = useState("");
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<ValidateCouponResponse | null>(null);
+  const [couponError, setCouponError] = useState("");
 
   const isNewAddress = selectedAddressKey === NEW_ADDRESS_VALUE;
   const wardsQuery = useWards(isNewAddress ? selectedProvinceCode : "");
@@ -106,6 +112,10 @@ export default function Checkout() {
   const selectedWard = useMemo(
     () => wards.find((ward) => ward.code === selectedWardCode) ?? null,
     [selectedWardCode, wards],
+  );
+  const couponCartKey = useMemo(
+    () => purchasableLines.map((line) => `${line.productId}:${line.quantity}`).join("|"),
+    [purchasableLines],
   );
 
   useEffect(() => {
@@ -131,10 +141,15 @@ export default function Checkout() {
     didInitializeAddress.current = true;
   }, [addressesQuery.isError, addressesQuery.isLoading, savedAddresses, user]);
 
+  useEffect(() => {
+    setAppliedCoupon(null);
+    setCouponError("");
+  }, [couponCartKey, ship]);
+
   const selectedShip = SHIP_OPTIONS.find((option) => option.id === ship) ?? SHIP_OPTIONS[0];
   const shipping = ship === "standard" && subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : selectedShip.fee;
-  const discount = calculateDiscount(couponCode, subtotal);
-  const total = Math.max(0, subtotal + shipping - discount);
+  const discount = Number(appliedCoupon?.discount_total ?? 0);
+  const total = appliedCoupon ? Number(appliedCoupon.total) : Math.max(0, subtotal + shipping - discount);
   const isNewAddressReady =
     isNewAddress &&
     customerName.trim().length > 0 &&
@@ -154,6 +169,7 @@ export default function Checkout() {
     !productsQuery.isLoading &&
     !productsQuery.isError &&
     !(isNewAddress && (provincesQuery.isLoading || wardsQuery.isLoading)) &&
+    !validateCoupon.isPending &&
     !createOrder.isPending;
 
   function selectSavedAddress(address: UserAddress) {
@@ -181,6 +197,50 @@ export default function Checkout() {
   const handleProvinceChange = (provinceCode: string) => {
     setSelectedProvinceCode(provinceCode);
     setSelectedWardCode("");
+  };
+
+  const clearCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponError("");
+  };
+
+  const applyCoupon = () => {
+    const code = couponInput.trim().toUpperCase();
+
+    if (!code) {
+      setCouponError("Vui lòng nhập mã giảm giá.");
+      return;
+    }
+
+    if (purchasableLines.length === 0) {
+      setCouponError("Không có sản phẩm hợp lệ để áp dụng mã giảm giá.");
+      return;
+    }
+
+    validateCoupon.mutate(
+      {
+        code,
+        shipping_method: ship,
+        items: purchasableLines.map((line) => ({
+          product_id: line.productId,
+          quantity: line.quantity,
+        })),
+      },
+      {
+        onSuccess: (result) => {
+          setAppliedCoupon(result);
+          setCouponInput(result.coupon.code);
+          setCouponError("");
+          toast.success(`Đã áp dụng mã ${result.coupon.code}.`);
+        },
+        onError: (error) => {
+          if (wasApiConnectionNotified(error)) return;
+          setAppliedCoupon(null);
+          setCouponError(getApiErrorMessage(error, "Mã giảm giá không hợp lệ."));
+        },
+      },
+    );
   };
 
   const placeOrder = (event: FormEvent<HTMLFormElement>) => {
@@ -229,7 +289,7 @@ export default function Checkout() {
       note: note.trim() || null,
       payment_method: pay,
       shipping_method: ship,
-      coupon_code: couponCode || null,
+      coupon_code: appliedCoupon?.coupon.code ?? null,
       items: purchasableLines.map((line) => ({
         product_id: line.productId,
         quantity: line.quantity,
@@ -251,6 +311,9 @@ export default function Checkout() {
       },
       onError: (error) => {
         if (wasApiConnectionNotified(error)) return;
+        if (hasApiFieldError(error, "coupon_code")) {
+          setAppliedCoupon(null);
+        }
         toast.error(getApiErrorMessage(error, "Đặt hàng thất bại. Vui lòng thử lại."));
       },
     });
@@ -509,6 +572,54 @@ export default function Checkout() {
                     );
                   })}
                 </ul>
+
+                <div className="border-b border-stone-200 py-4">
+                  <Label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700">
+                    <TicketPercent className="h-4 w-4" />
+                    Mã giảm giá
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={couponInput}
+                      onChange={(event) => {
+                        const nextCode = event.target.value.toUpperCase();
+                        setCouponInput(nextCode);
+                        setCouponError("");
+                        if (appliedCoupon && nextCode !== appliedCoupon.coupon.code) {
+                          setAppliedCoupon(null);
+                        }
+                      }}
+                      placeholder="WELCOME10"
+                      disabled={validateCoupon.isPending}
+                      className="h-10 rounded-lg border-input bg-stone-50"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={applyCoupon}
+                      disabled={validateCoupon.isPending || purchasableLines.length === 0}
+                      className="h-10 rounded-lg border-stone-300"
+                    >
+                      {validateCoupon.isPending ? "Đang kiểm tra..." : "Áp dụng"}
+                    </Button>
+                  </div>
+                  {couponError && <p className="mt-2 text-xs text-red-600">{couponError}</p>}
+                  {appliedCoupon && (
+                    <div className="mt-2 flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                      <span>
+                        Đã áp dụng {appliedCoupon.coupon.code}: -{formatVnd(appliedCoupon.discount_total)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={clearCoupon}
+                        className="grid h-6 w-6 place-items-center rounded-full hover:bg-emerald-100"
+                        aria-label="Bỏ mã giảm giá"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 <dl className="space-y-2.5 py-4 text-sm">
                   <div className="flex justify-between text-stone-600"><dt>Tạm tính</dt><dd>{formatVnd(subtotal)}</dd></div>
@@ -772,4 +883,11 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   const firstError = errors ? Object.values(errors).flat().find(Boolean) : undefined;
 
   return firstError ?? err.response?.data?.message ?? err.message ?? fallback;
+}
+
+function hasApiFieldError(error: unknown, field: string) {
+  const err = error as AxiosError<ApiErrorResponse>;
+  const errors = err.response?.data?.errors as Record<string, string[]> | undefined;
+
+  return Boolean(errors?.[field]?.length);
 }

@@ -28,6 +28,7 @@ const Categories = lazy(() => import("@/pages/admin/Categories"));
 const Brands = lazy(() => import("@/pages/admin/Brands"));
 const Catalog = lazy(() => import("@/pages/admin/Catalog"));
 const Products = lazy(() => import("@/pages/admin/Products"));
+const Coupons = lazy(() => import("@/pages/admin/Coupons"));
 const AdminProductReviews = lazy(() => import("@/pages/admin/ProductReviews"));
 const AdminOrders = lazy(() => import("@/pages/admin/Orders"));
 const Contacts = lazy(() => import("@/pages/admin/Contacts"));
@@ -102,6 +103,7 @@ export function AppRoutes() {
             <Route path="brands" element={<Brands />} />
             <Route path="catalog" element={<Catalog />} />
             <Route path="products" element={<Products />} />
+            <Route path="coupons" element={<Coupons />} />
             <Route path="product-reviews" element={<AdminProductReviews />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="contacts" element={<Contacts />} />

@@ -1,15 +1,11 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Minus, Package, Plus, ShoppingBag, Tag, Trash2, Truck } from "lucide-react";
-import { toast } from "sonner";
+import { ArrowLeft, Minus, Package, Plus, ShoppingBag, Trash2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 import { useCartProducts } from "@/hooks/useCartProducts";
 import {
   FREE_SHIPPING_THRESHOLD,
-  calculateDiscount,
   calculateStandardShipping,
   formatVnd,
   productPrice,
@@ -20,32 +16,18 @@ export default function Cart() {
   const {
     cart,
     cartCount,
-    couponCode,
     lines,
     purchasableLines,
     subtotal,
     productsQuery,
     hasCartIssues,
-    applyCouponCode,
-    clearCouponCode,
     updateCartQuantity,
     removeFromCart,
   } = useCartProducts();
-  const [coupon, setCoupon] = useState(couponCode);
 
-  const discount = calculateDiscount(couponCode, subtotal);
   const shipping = calculateStandardShipping(subtotal);
-  const total = Math.max(0, subtotal + shipping - discount);
+  const total = Math.max(0, subtotal + shipping);
   const canCheckout = purchasableLines.length > 0 && !hasCartIssues;
-
-  const applyCoupon = () => {
-    if (!coupon.trim()) return;
-    if (applyCouponCode(coupon)) {
-      toast.success("Đã áp dụng mã MAISON10");
-    } else {
-      toast.error("Mã giảm giá không hợp lệ");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900">
@@ -99,48 +81,18 @@ export default function Cart() {
                   </div>
                 )}
 
-                <div className="mb-4 flex gap-2">
-                  <div className="relative flex-1">
-                    <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                    <Input
-                      value={coupon}
-                      onChange={(event) => setCoupon(event.target.value)}
-                      placeholder="Nhập MAISON10"
-                      className="h-10 rounded-lg border-input bg-stone-50 pl-9"
-                    />
-                  </div>
-                  <Button type="button" variant="outline" onClick={applyCoupon} className="h-10 rounded-lg border-stone-300">
-                    Áp dụng
-                  </Button>
-                </div>
-
                 <dl className="space-y-2.5 border-t border-stone-200 pt-4 text-sm">
                   <div className="flex justify-between text-stone-600">
                     <dt>Tạm tính</dt>
                     <dd>{formatVnd(subtotal)}</dd>
                   </div>
                   <div className="flex justify-between text-stone-600">
-                    <dt className="flex items-center gap-1.5"><Truck className="h-4 w-4" />Phí vận chuyển</dt>
+                    <dt className="flex items-center gap-1.5">
+                      <Truck className="h-4 w-4" />
+                      Phí vận chuyển
+                    </dt>
                     <dd>{shipping === 0 ? <span className="text-amber-700">Miễn phí</span> : formatVnd(shipping)}</dd>
                   </div>
-                  {discount > 0 && (
-                    <div className="flex justify-between text-emerald-700">
-                      <dt>Giảm giá</dt>
-                      <dd className="flex items-center gap-2">
-                        -{formatVnd(discount)}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            clearCouponCode();
-                            setCoupon("");
-                          }}
-                          className="text-[11px] font-medium text-stone-500 underline"
-                        >
-                          bỏ
-                        </button>
-                      </dd>
-                    </div>
-                  )}
                   {shipping > 0 && (
                     <p className="text-xs text-stone-400">
                       Mua thêm {formatVnd(FREE_SHIPPING_THRESHOLD - subtotal)} để được miễn phí giao hàng.
@@ -163,7 +115,7 @@ export default function Cart() {
                   </Button>
                 )}
                 <p className="mt-3 text-center text-xs text-stone-400">
-                  Phí vận chuyển và ưu đãi sẽ được xác nhận ở bước thanh toán.
+                  Mã giảm giá sẽ được áp dụng ở bước thanh toán.
                 </p>
               </div>
 

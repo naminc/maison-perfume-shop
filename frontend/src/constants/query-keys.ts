@@ -1,6 +1,7 @@
 const ADMIN_CATEGORIES_KEY = ['admin', 'categories'] as const;
 const ADMIN_BRANDS_KEY = ['admin', 'brands'] as const;
 const ADMIN_PRODUCTS_KEY = ['admin', 'products'] as const;
+const ADMIN_COUPONS_KEY = ['admin', 'coupons'] as const;
 const ADMIN_PRODUCT_REVIEWS_KEY = ['admin', 'product-reviews'] as const;
 const ADMIN_ORDERS_KEY = ['admin', 'orders'] as const;
 const ADMIN_USERS_KEY = ['admin', 'users'] as const;
@@ -26,6 +27,11 @@ export const QUERY_KEYS = {
       all: ADMIN_PRODUCTS_KEY,
       list:   (params: Record<string, unknown> = {}) => [...ADMIN_PRODUCTS_KEY, 'list', params] as const,
       detail: (id: number | string) => [...ADMIN_PRODUCTS_KEY, 'detail', id] as const,
+    },
+    coupons: {
+      all: ADMIN_COUPONS_KEY,
+      list:   (params: Record<string, unknown> = {}) => [...ADMIN_COUPONS_KEY, 'list', params] as const,
+      detail: (id: number | string) => [...ADMIN_COUPONS_KEY, 'detail', id] as const,
     },
     productReviews: {
       all: ADMIN_PRODUCT_REVIEWS_KEY,

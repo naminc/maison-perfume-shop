@@ -20,22 +20,17 @@ interface RawCartLine {
 interface StorefrontContextValue {
   cart: CartLine[];
   cartCount: number;
-  couponCode: string;
   wishlistIds: number[];
   addToCart: (productId: number, quantity?: number, maxStock?: number) => void;
   updateCartQuantity: (productId: number, quantity: number, maxStock?: number) => void;
   removeFromCart: (productId: number) => void;
   clearCart: () => void;
-  applyCouponCode: (code: string) => boolean;
-  clearCouponCode: () => void;
   toggleWishlist: (productId: number) => void;
   isInWishlist: (productId: number) => boolean;
 }
 
 const CART_KEY = "maison-cart";
-const COUPON_KEY = "maison-coupon";
 const WISHLIST_KEY = "maison-wishlist";
-const VALID_COUPONS = new Set(["MAISON10"]);
 
 export const StorefrontContext = createContext<StorefrontContextValue | null>(null);
 
@@ -94,9 +89,6 @@ export function StorefrontProvider({ children }: { children: ReactNode }) {
   const [wishlistIds, setWishlistIds] = useState<number[]>(() =>
     normalizeWishlist(readJson<Array<number | string>>(WISHLIST_KEY, [])),
   );
-  const [couponCode, setCouponCode] = useState(() =>
-    readJson<string>(COUPON_KEY, ""),
-  );
 
   useEffect(() => {
     window.localStorage.setItem(CART_KEY, JSON.stringify(cart));
@@ -105,10 +97,6 @@ export function StorefrontProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     window.localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlistIds));
   }, [wishlistIds]);
-
-  useEffect(() => {
-    window.localStorage.setItem(COUPON_KEY, JSON.stringify(couponCode));
-  }, [couponCode]);
 
   const addToCart = useCallback((productId: number, quantity = 1, maxStock?: number) => {
     if (!Number.isInteger(productId) || productId <= 0) return;
@@ -154,17 +142,7 @@ export function StorefrontProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => {
     setCart([]);
-    setCouponCode("");
   }, []);
-
-  const applyCouponCode = useCallback((code: string) => {
-    const normalized = code.trim().toUpperCase();
-    if (!VALID_COUPONS.has(normalized)) return false;
-    setCouponCode(normalized);
-    return true;
-  }, []);
-
-  const clearCouponCode = useCallback(() => setCouponCode(""), []);
 
   const toggleWishlist = useCallback((productId: number) => {
     if (!Number.isInteger(productId) || productId <= 0) return;
@@ -190,28 +168,22 @@ export function StorefrontProvider({ children }: { children: ReactNode }) {
     () => ({
       cart,
       cartCount,
-      couponCode,
       wishlistIds,
       addToCart,
       updateCartQuantity,
       removeFromCart,
       clearCart,
-      applyCouponCode,
-      clearCouponCode,
       toggleWishlist,
       isInWishlist,
     }),
     [
       cart,
       cartCount,
-      couponCode,
       wishlistIds,
       addToCart,
       updateCartQuantity,
       removeFromCart,
       clearCart,
-      applyCouponCode,
-      clearCouponCode,
       toggleWishlist,
       isInWishlist,
     ],
