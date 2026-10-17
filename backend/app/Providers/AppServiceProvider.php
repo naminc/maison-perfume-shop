@@ -15,6 +15,8 @@ use App\Repositories\Interfaces\ContactRepositoryInterface;
 use App\Repositories\Interfaces\CouponRepositoryInterface;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
 use App\Repositories\Interfaces\StockMovementRepositoryInterface;
+use App\Repositories\Interfaces\SupplierRepositoryInterface;
+use App\Repositories\Interfaces\PurchaseOrderRepositoryInterface;
 use App\Repositories\Interfaces\ProductRepositoryInterface;
 use App\Repositories\Interfaces\ProductReviewRepositoryInterface;
 use App\Repositories\Interfaces\SettingRepositoryInterface;
@@ -25,6 +27,8 @@ use App\Repositories\PostRepository;
 use App\Repositories\ProductRepository;
 use App\Repositories\ProductReviewRepository;
 use App\Repositories\StockMovementRepository;
+use App\Repositories\SupplierRepository;
+use App\Repositories\PurchaseOrderRepository;
 use App\Repositories\Interfaces\WishlistRepositoryInterface;
 use App\Repositories\SettingRepository;
 use App\Repositories\UserRepository;
@@ -45,6 +49,8 @@ use App\Services\Interfaces\CouponServiceInterface;
 use App\Services\Interfaces\DashboardServiceInterface;
 use App\Services\Interfaces\OrderServiceInterface;
 use App\Services\Interfaces\InventoryServiceInterface;
+use App\Services\Interfaces\SupplierServiceInterface;
+use App\Services\Interfaces\PurchaseOrderServiceInterface;
 use App\Services\Interfaces\ProductServiceInterface;
 use App\Services\Interfaces\ProductReviewServiceInterface;
 use App\Services\Interfaces\SettingServiceInterface;
@@ -52,6 +58,8 @@ use App\Services\Interfaces\UserServiceInterface;
 use App\Services\Interfaces\PostServiceInterface;
 use App\Services\OrderService;
 use App\Services\InventoryService;
+use App\Services\SupplierService;
+use App\Services\PurchaseOrderService;
 use App\Services\PostService;
 use App\Services\ProductService;
 use App\Services\ProductReviewService;
@@ -78,6 +86,8 @@ class AppServiceProvider extends ServiceProvider
         ProductReviewServiceInterface::class => ProductReviewService::class,
         OrderServiceInterface::class    => OrderService::class,
         InventoryServiceInterface::class => InventoryService::class,
+        SupplierServiceInterface::class => SupplierService::class,
+        PurchaseOrderServiceInterface::class => PurchaseOrderService::class,
         UserServiceInterface::class     => UserService::class,
         WishlistServiceInterface::class => WishlistService::class,
 
@@ -94,6 +104,8 @@ class AppServiceProvider extends ServiceProvider
         ProductReviewRepositoryInterface::class => ProductReviewRepository::class,
         OrderRepositoryInterface::class    => OrderRepository::class,
         StockMovementRepositoryInterface::class => StockMovementRepository::class,
+        SupplierRepositoryInterface::class => SupplierRepository::class,
+        PurchaseOrderRepositoryInterface::class => PurchaseOrderRepository::class,
         WishlistRepositoryInterface::class => WishlistRepository::class,
     ];
     /**

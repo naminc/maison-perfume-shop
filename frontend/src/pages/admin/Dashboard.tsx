@@ -310,6 +310,7 @@ export default function Dashboard() {
                       <li key={product.id} className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium text-foreground">{product.name}</div>
+                          {product.variant_name && <div className="truncate text-xs text-muted-foreground">{product.variant_name}</div>}
                           {product.sku && <div className="text-xs text-muted-foreground">{product.sku}</div>}
                         </div>
                         <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${product.stock === 0 ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>

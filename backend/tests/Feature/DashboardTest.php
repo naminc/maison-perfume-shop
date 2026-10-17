@@ -143,15 +143,19 @@ class DashboardTest extends TestCase
 
     private function createOrderItem(Order $order, Product $product, int $quantity, float $lineTotal): OrderItem
     {
+        $variant = $product->defaultVariant;
+
         return OrderItem::query()->create([
             'order_id' => $order->id,
             'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
             'product_name' => $product->name,
             'product_slug' => $product->slug,
-            'product_sku' => $product->sku,
+            'product_sku' => $variant->sku,
+            'variant_name' => $variant->name,
             'product_image' => $product->image,
             'unit_price' => $lineTotal / max(1, $quantity),
-            'original_price' => $product->price,
+            'original_price' => $variant->price,
             'quantity' => $quantity,
             'line_total' => $lineTotal,
         ]);
@@ -161,7 +165,7 @@ class DashboardTest extends TestCase
     {
         $name = 'Test Perfume ' . Str::random(8);
 
-        return Product::query()->create(array_merge([
+        $attributes = array_merge([
             'name' => $name,
             'slug' => Str::slug($name) . '-' . Str::lower(Str::random(6)),
             'sku' => 'TEST-' . Str::upper(Str::random(8)),
@@ -174,6 +178,11 @@ class DashboardTest extends TestCase
             'status' => ProductStatus::Active->value,
             'is_featured' => false,
             'sort_order' => 1,
-        ], $overrides));
+        ], $overrides);
+        $variant = collect($attributes)->only(['sku', 'concentration', 'volume_ml', 'price', 'sale_price', 'stock'])->all();
+        $product = Product::query()->create(collect($attributes)->except(array_keys($variant))->all());
+        $product->variants()->create([...$variant, 'status' => 'active', 'is_default' => true, 'sort_order' => 1]);
+
+        return $product->fresh(['variants', 'defaultVariant']);
     }
 }

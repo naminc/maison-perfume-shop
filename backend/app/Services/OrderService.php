@@ -6,8 +6,9 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\ProductStatus;
+use App\Enums\ProductVariantStatus;
 use App\Models\Order;
-use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Province;
 use App\Models\User;
 use App\Models\Ward;
@@ -49,14 +50,14 @@ class OrderService extends BaseService implements OrderServiceInterface
     {
         $result = $this->executeTransaction(function () use ($user, $payload) {
             $items = $this->normalizeItems($payload['items'] ?? []);
-            $products = $this->lockProductsForItems($items);
+            $variants = $this->lockVariantsForItems($items);
             $province = Province::query()->find((string) $payload['province_code']);
             $ward = Ward::query()
                 ->where('code', (string) $payload['ward_code'])
                 ->where('province_code', (string) $payload['province_code'])
                 ->first();
 
-            [$orderItems, $subtotal] = $this->buildOrderItems($items, $products);
+            [$orderItems, $subtotal] = $this->buildOrderItems($items, $variants);
             $shippingFee = $this->calculateShippingFee($payload['shipping_method'] ?? self::STANDARD_SHIPPING_METHOD, $subtotal);
             $couponPreview = $this->couponService->previewForOrder(
                 $user,
@@ -93,10 +94,10 @@ class OrderService extends BaseService implements OrderServiceInterface
 
             $order->items()->createMany($orderItems);
 
-            foreach ($items as $productId => $quantity) {
+            foreach ($items as $variantId => $item) {
                 $this->inventoryService->decreaseForOrder(
-                    $products->get($productId),
-                    $quantity,
+                    $variants->get($variantId),
+                    $item['quantity'],
                     $order,
                 );
             }
@@ -245,13 +246,22 @@ class OrderService extends BaseService implements OrderServiceInterface
 
         foreach ($items as $item) {
             $productId = (int) ($item['product_id'] ?? 0);
+            $variantId = (int) ($item['product_variant_id'] ?? 0);
             $quantity = (int) ($item['quantity'] ?? 0);
 
-            if ($productId <= 0 || $quantity <= 0) {
+            if ($productId <= 0 || $variantId <= 0 || $quantity <= 0) {
                 continue;
             }
 
-            $normalized[$productId] = ($normalized[$productId] ?? 0) + $quantity;
+            if (isset($normalized[$variantId])) {
+                if ($normalized[$variantId]['product_id'] !== $productId) {
+                    throw ValidationException::withMessages(['items' => ['Phiên bản không thuộc sản phẩm đã chọn.']]);
+                }
+
+                $normalized[$variantId]['quantity'] += $quantity;
+            } else {
+                $normalized[$variantId] = ['product_id' => $productId, 'quantity' => $quantity];
+            }
         }
 
         if ($normalized === []) {
@@ -263,26 +273,29 @@ class OrderService extends BaseService implements OrderServiceInterface
         return $normalized;
     }
 
-    private function lockProductsForItems(array $items): Collection
+    private function lockVariantsForItems(array $items): Collection
     {
-        return Product::query()
-            ->with(['brand:id,name', 'category:id,name'])
+        return ProductVariant::query()
+            ->with(['product.brand:id,name', 'product.category:id,name'])
             ->whereIn('id', array_keys($items))
             ->lockForUpdate()
             ->get()
             ->keyBy('id');
     }
 
-    private function buildOrderItems(array $items, Collection $products): array
+    private function buildOrderItems(array $items, Collection $variants): array
     {
         $orderItems = [];
         $subtotal = 0.0;
 
-        foreach ($items as $productId => $quantity) {
-            /** @var Product|null $product */
-            $product = $products->get($productId);
+        foreach ($items as $variantId => $item) {
+            $productId = $item['product_id'];
+            $quantity = $item['quantity'];
+            /** @var ProductVariant|null $variant */
+            $variant = $variants->get($variantId);
+            $product = $variant?->product;
 
-            if (! $product) {
+            if (! $variant || ! $product || $variant->product_id !== $productId) {
                 throw ValidationException::withMessages([
                     'items' => "Sản phẩm #{$productId} không tồn tại.",
                 ]);
@@ -294,27 +307,35 @@ class OrderService extends BaseService implements OrderServiceInterface
                 ]);
             }
 
-            if ($product->stock < $quantity) {
+            if ($this->statusValue($variant) !== ProductVariantStatus::Active->value) {
                 throw ValidationException::withMessages([
-                    'items' => "Sản phẩm {$product->name} chỉ còn {$product->stock} sản phẩm trong kho.",
+                    'items' => "Phiên bản {$variant->sku} đang tạm ẩn.",
                 ]);
             }
 
-            $unitPrice = (float) ($product->sale_price ?? $product->price);
-            $originalPrice = (float) $product->price;
+            if ($variant->stock < $quantity) {
+                throw ValidationException::withMessages([
+                    'items' => "Phiên bản {$variant->sku} chỉ còn {$variant->stock} sản phẩm trong kho.",
+                ]);
+            }
+
+            $unitPrice = (float) ($variant->sale_price ?? $variant->price);
+            $originalPrice = (float) $variant->price;
             $lineTotal = $unitPrice * $quantity;
             $subtotal += $lineTotal;
 
             $orderItems[] = [
                 'product_id'     => $product->id,
+                'product_variant_id' => $variant->id,
                 'product_name'   => $product->name,
                 'product_slug'   => $product->slug,
-                'product_sku'    => $product->sku,
+                'product_sku'    => $variant->sku,
+                'variant_name'   => $variant->name,
                 'product_image'  => $product->image,
                 'brand_name'     => $product->brand?->name,
                 'category_name'  => $product->category?->name,
-                'volume_ml'      => $product->volume_ml,
-                'concentration'  => $product->concentration,
+                'volume_ml'      => $variant->volume_ml,
+                'concentration'  => $variant->concentration,
                 'unit_price'     => $unitPrice,
                 'original_price' => $originalPrice,
                 'quantity'       => $quantity,
@@ -341,15 +362,15 @@ class OrderService extends BaseService implements OrderServiceInterface
     private function restoreStock(Order $order): void
     {
         foreach ($order->items as $item) {
-            if (! $item->product_id) {
+            if (! $item->product_variant_id) {
                 continue;
             }
 
-            $product = Product::withTrashed()->find($item->product_id);
+            $variant = ProductVariant::withTrashed()->find($item->product_variant_id);
 
-            if ($product) {
+            if ($variant) {
                 $this->inventoryService->restoreForCancelledOrder(
-                    $product,
+                    $variant,
                     $item->quantity,
                     $order,
                 );

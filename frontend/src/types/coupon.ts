@@ -58,6 +58,7 @@ export interface CouponListResponse {
 
 export interface CouponCheckoutItem {
   product_id: number;
+  product_variant_id: number;
   quantity: number;
 }
 

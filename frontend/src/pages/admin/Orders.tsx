@@ -496,7 +496,7 @@ export default function Orders() {
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium">{item.product_name}</div>
                         <div className="mt-1 text-xs text-muted-foreground">
-                          {[item.brand_name, item.volume_ml ? `${item.volume_ml}ml` : null, item.concentration].filter(Boolean).join(" · ")} · x{item.quantity}
+                          {[item.variant_name, item.product_sku, item.brand_name, item.volume_ml ? `${item.volume_ml}ml` : null, item.concentration].filter(Boolean).join(" · ")} · x{item.quantity}
                         </div>
                       </div>
                       <div className="whitespace-nowrap text-sm font-semibold">{formatVnd(item.line_total)}</div>

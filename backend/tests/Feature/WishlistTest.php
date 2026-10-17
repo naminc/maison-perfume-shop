@@ -143,7 +143,7 @@ class WishlistTest extends TestCase
     {
         $name = $overrides['name'] ?? 'Test Perfume ' . Str::random(8);
 
-        return Product::query()->create(array_merge([
+        $attributes = array_merge([
             'name' => $name,
             'slug' => Str::slug($name) . '-' . Str::lower(Str::random(6)),
             'sku' => 'TEST-' . Str::upper(Str::random(8)),
@@ -156,6 +156,11 @@ class WishlistTest extends TestCase
             'status' => ProductStatus::Active->value,
             'is_featured' => false,
             'sort_order' => 1,
-        ], $overrides));
+        ], $overrides);
+        $variant = collect($attributes)->only(['sku', 'concentration', 'volume_ml', 'price', 'sale_price', 'stock'])->all();
+        $product = Product::query()->create(collect($attributes)->except(array_keys($variant))->all());
+        $product->variants()->create([...$variant, 'status' => 'active', 'is_default' => true, 'sort_order' => 1]);
+
+        return $product->fresh(['variants', 'defaultVariant']);
     }
 }

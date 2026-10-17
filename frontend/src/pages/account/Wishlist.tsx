@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import AccountLayout from "@/layouts/AccountLayout";
 import { useStorefront } from "@/hooks/useStorefront";
 import { useWishlistProducts } from "@/hooks/useWishlist";
-import { formatVnd, productPrice } from "@/lib/product-utils";
+import { defaultProductVariant, formatVnd, productPrice } from "@/lib/product-utils";
 import type { Product } from "@/types/product";
 
 export default function Wishlist() {
@@ -18,8 +18,9 @@ export default function Wishlist() {
   };
 
   const handleAddToCart = (product: Product) => {
-    if (product.stock <= 0) return;
-    addToCart(product.id, 1, product.stock);
+    const variant = defaultProductVariant(product);
+    if (!variant || variant.stock <= 0) return;
+    addToCart(product.id, variant.id, 1, variant.stock);
     toast.success(`Đã thêm ${product.name} vào giỏ`);
   };
 
@@ -47,16 +48,16 @@ export default function Wishlist() {
                     <Link to={`/product/${product.slug}`} className="hover:text-amber-700">{product.name}</Link>
                   </h3>
                   <div className="mt-1 text-sm font-semibold text-amber-700">{formatVnd(productPrice(product))}</div>
-                  {product.volume_ml && <div className="mt-0.5 text-xs text-stone-500">{product.volume_ml}ml</div>}
+                  {defaultProductVariant(product)?.volume_ml && <div className="mt-0.5 text-xs text-stone-500">{defaultProductVariant(product)?.volume_ml}ml</div>}
                 </div>
                 <div className="mt-3 flex gap-2">
                   <button
                     type="button"
-                    disabled={product.stock <= 0}
+                    disabled={(defaultProductVariant(product)?.stock ?? 0) <= 0}
                     onClick={() => handleAddToCart(product)}
                     className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-stone-900 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-amber-700 hover:shadow disabled:bg-stone-300 disabled:shadow-none"
                   >
-                    {product.stock > 0 ? (
+                    {(defaultProductVariant(product)?.stock ?? 0) > 0 ? (
                       <>
                         <ShoppingCart className="h-3.5 w-3.5" />
                         Thêm vào giỏ

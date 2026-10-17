@@ -17,6 +17,7 @@ import { ProductStatusBadge } from "@/components/admin/products/ProductStatusBad
 import { PRODUCT_GENDER_LABELS } from "@/constants/product";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDateTime } from "@/lib/date-time";
+import { defaultProductVariant } from "@/lib/product-utils";
 import { cn } from "@/lib/utils";
 import type { Product, ProductListResponse } from "@/types/product";
 
@@ -147,7 +148,7 @@ export function ProductTable({
                     <div className="min-w-0">
                       <CardTitle className="truncate text-sm font-medium">{product.name}</CardTitle>
                       <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
-                        {product.sku ?? product.slug}
+                        {defaultProductVariant(product)?.sku ?? product.slug}
                       </p>
                     </div>
                   </div>
@@ -158,7 +159,7 @@ export function ProductTable({
                 <InfoRow label="Thương hiệu" value={product.brand?.name ?? "-"} />
                 <InfoRow label="Danh mục" value={product.category?.name ?? "-"} />
                 <InfoRow label="Giá" value={formatProductPrice(product)} />
-                <InfoRow label="Tồn kho" value={String(product.stock)} />
+                <InfoRow label="Tồn kho" value={String(product.total_stock)} />
                 <InfoRow label="Thứ tự" value={String(product.sort_order)} />
                 <InfoRow label="Ngày cập nhật" value={formatDateTime(product.updated_at)} muted />
                 <div className="flex justify-end pt-1">
@@ -237,15 +238,15 @@ export function ProductTable({
                   <div className="truncate font-medium">{product.name}</div>
                   <div className="mt-1 truncate font-mono text-xs text-muted-foreground">{product.slug}</div>
                 </TableCell>
-                <TableCell className="truncate font-mono text-xs text-muted-foreground">{product.sku ?? "-"}</TableCell>
+                <TableCell className="truncate font-mono text-xs text-muted-foreground">{defaultProductVariant(product)?.sku ?? "-"}</TableCell>
                 <TableCell className="truncate text-sm">{product.brand?.name ?? "-"}</TableCell>
                 <TableCell className="truncate text-sm">{product.category?.name ?? "-"}</TableCell>
                 <TableCell className="text-sm">{PRODUCT_GENDER_LABELS[product.gender]}</TableCell>
                 <TableCell className="whitespace-nowrap">
                   <PriceBlock product={product} />
                 </TableCell>
-                <TableCell className={cn("text-center font-mono text-sm", product.stock === 0 && "text-destructive")}>
-                  {product.stock}
+                <TableCell className={cn("text-center font-mono text-sm", product.total_stock === 0 && "text-destructive")}>
+                  {product.total_stock}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   <ProductStatusBadge status={product.status} />
@@ -296,22 +297,27 @@ function ProductImage({ product }: { product: Product }) {
 }
 
 function PriceBlock({ product }: { product: Product }) {
-  if (product.sale_price) {
+  const variant = defaultProductVariant(product);
+  if (!variant) return <span>-</span>;
+
+  if (variant.sale_price) {
     return (
       <div className="space-y-0.5">
-        <div className="font-medium text-destructive">{formatMoney(product.sale_price)}</div>
-        <div className="text-xs text-muted-foreground line-through">{formatMoney(product.price)}</div>
+        <div className="font-medium text-destructive">{formatMoney(variant.sale_price)}</div>
+        <div className="text-xs text-muted-foreground line-through">{formatMoney(variant.price)}</div>
       </div>
     );
   }
 
-  return <span className="font-medium">{formatMoney(product.price)}</span>;
+  return <span className="font-medium">{formatMoney(variant.price)}</span>;
 }
 
 function formatProductPrice(product: Product) {
-  return product.sale_price
-    ? `${formatMoney(product.sale_price)} / ${formatMoney(product.price)}`
-    : formatMoney(product.price);
+  const variant = defaultProductVariant(product);
+  if (!variant) return "-";
+  return variant.sale_price
+    ? `${formatMoney(variant.sale_price)} / ${formatMoney(variant.price)}`
+    : formatMoney(variant.price);
 }
 
 function formatMoney(value: string | number | null) {

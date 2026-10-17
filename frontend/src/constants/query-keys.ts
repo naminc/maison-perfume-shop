@@ -9,6 +9,8 @@ const ADMIN_DASHBOARD_KEY = ['admin', 'dashboard'] as const;
 const ADMIN_CONTACTS_KEY = ['admin', 'contacts'] as const;
 const ADMIN_POSTS_KEY = ['admin', 'posts'] as const;
 const ADMIN_INVENTORY_KEY = ['admin', 'inventory'] as const;
+const ADMIN_SUPPLIERS_KEY = ['admin', 'suppliers'] as const;
+const ADMIN_PURCHASE_ORDERS_KEY = ['admin', 'purchase-orders'] as const;
 const POSTS_KEY = ['posts'] as const;
 const ACCOUNT_ORDERS_KEY = ['account', 'orders'] as const;
 const ACCOUNT_PRODUCT_REVIEWS_KEY = ['account', 'product-reviews'] as const;
@@ -71,6 +73,16 @@ export const QUERY_KEYS = {
       all: ADMIN_INVENTORY_KEY,
       movements: (params: Record<string, unknown> = {}) => [...ADMIN_INVENTORY_KEY, 'movements', params] as const,
       product: (id: number | string, params: Record<string, unknown> = {}) => [...ADMIN_INVENTORY_KEY, 'product', id, params] as const,
+    },
+    suppliers: {
+      all: ADMIN_SUPPLIERS_KEY,
+      list: (params: Record<string, unknown> = {}) => [...ADMIN_SUPPLIERS_KEY, 'list', params] as const,
+    },
+    purchaseOrders: {
+      all: ADMIN_PURCHASE_ORDERS_KEY,
+      list: (params: Record<string, unknown> = {}) => [...ADMIN_PURCHASE_ORDERS_KEY, 'list', params] as const,
+      detail: (id: number | string) => [...ADMIN_PURCHASE_ORDERS_KEY, 'detail', id] as const,
+      summary: [...ADMIN_PURCHASE_ORDERS_KEY, 'summary'] as const,
     },
   },
   account: {

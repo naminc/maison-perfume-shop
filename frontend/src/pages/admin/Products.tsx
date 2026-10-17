@@ -31,6 +31,7 @@ import { useAdminProducts, useDeleteProduct } from "@/hooks/useAdminProducts";
 import { wasApiConnectionNotified } from "@/lib/api";
 import { formatDateTime } from "@/lib/date-time";
 import { exportExcel, type ExcelColumn } from "@/lib/export-excel";
+import { defaultProductVariant } from "@/lib/product-utils";
 import type { ApiErrorResponse } from "@/types/auth";
 import type {
   Product,
@@ -364,7 +365,7 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   return err.response?.data?.message ?? err.message ?? fallback;
 }
 
-function formatMoney(value: string | number | null) {
+function formatMoney(value: string | number | null | undefined) {
   const amount = Number(value ?? 0);
 
   return new Intl.NumberFormat("vi-VN", {
@@ -385,7 +386,7 @@ const PRODUCT_EXPORT_COLUMNS: ExcelColumn<Product>[] = [
   },
   {
     header: "SKU",
-    accessor: (product) => product.sku,
+    accessor: (product) => defaultProductVariant(product)?.sku,
   },
   {
     header: "Slug",
@@ -405,15 +406,15 @@ const PRODUCT_EXPORT_COLUMNS: ExcelColumn<Product>[] = [
   },
   {
     header: "Giá bán",
-    accessor: (product) => formatMoney(product.price),
+    accessor: (product) => formatMoney(defaultProductVariant(product)?.price),
   },
   {
     header: "Giá khuyến mãi",
-    accessor: (product) => product.sale_price ? formatMoney(product.sale_price) : "",
+    accessor: (product) => defaultProductVariant(product)?.sale_price ? formatMoney(defaultProductVariant(product)?.sale_price) : "",
   },
   {
     header: "Tồn kho",
-    accessor: (product) => product.stock,
+    accessor: (product) => product.total_stock,
   },
   {
     header: "Trạng thái",

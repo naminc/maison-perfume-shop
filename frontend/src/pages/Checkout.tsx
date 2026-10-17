@@ -38,6 +38,7 @@ import {
   FREE_SHIPPING_THRESHOLD,
   STANDARD_SHIPPING_FEE,
   formatVnd,
+  productPrice,
 } from "@/lib/product-utils";
 import type { ApiErrorResponse } from "@/types/auth";
 import type { UserAddress } from "@/types/address";
@@ -114,7 +115,7 @@ export default function Checkout() {
     [selectedWardCode, wards],
   );
   const couponCartKey = useMemo(
-    () => purchasableLines.map((line) => `${line.productId}:${line.quantity}`).join("|"),
+    () => purchasableLines.map((line) => `${line.productId}:${line.variantId}:${line.quantity}`).join("|"),
     [purchasableLines],
   );
 
@@ -224,6 +225,7 @@ export default function Checkout() {
         shipping_method: ship,
         items: purchasableLines.map((line) => ({
           product_id: line.productId,
+          product_variant_id: line.variantId as number,
           quantity: line.quantity,
         })),
       },
@@ -292,6 +294,7 @@ export default function Checkout() {
       coupon_code: appliedCoupon?.coupon.code ?? null,
       items: purchasableLines.map((line) => ({
         product_id: line.productId,
+        product_variant_id: line.variantId as number,
         quantity: line.quantity,
       })),
     };
@@ -541,11 +544,11 @@ export default function Checkout() {
                 <ul className="space-y-3 border-b border-stone-200 pb-4">
                   {lines.map((line) => {
                     const product = line.product;
-                    const lineTotal = product ? Number(product.sale_price ?? product.price) * line.quantity : 0;
+                    const lineTotal = product && line.variant ? productPrice(product, line.variant) * line.quantity : 0;
                     const warning = line.unavailableReason ?? line.stockWarning;
 
                     return (
-                      <li key={line.productId} className="flex gap-3">
+                      <li key={`${line.productId}:${line.variantId ?? 0}`} className="flex gap-3">
                         <div className="relative shrink-0">
                           {product?.image ? (
                             <img src={product.image} alt={product.name} className="h-14 w-14 rounded-lg object-cover" />
@@ -562,7 +565,7 @@ export default function Checkout() {
                           <p className="truncate text-sm font-medium">{product?.name ?? `Sản phẩm #${line.productId}`}</p>
                           <p className="text-xs text-stone-500">
                             {product
-                              ? [product.brand?.name, product.volume_ml ? `${product.volume_ml}ml` : null].filter(Boolean).join(" · ")
+                              ? [product.brand?.name, line.variant?.concentration, line.variant?.volume_ml ? `${line.variant.volume_ml}ml` : null].filter(Boolean).join(" · ")
                               : "Không còn trong catalogue"}
                           </p>
                           {warning && <p className="mt-1 text-xs text-amber-700">{warning}</p>}

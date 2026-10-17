@@ -1,4 +1,4 @@
-import type { Product } from "@/types/product";
+import type { Product, ProductVariant } from "@/types/product";
 
 export type StockMovementType = "import" | "export" | "adjustment" | "order" | "order_cancelled";
 export type AdminStockAdjustmentType = "import" | "export" | "adjustment";
@@ -17,6 +17,7 @@ export interface StockMovementUser {
 export interface StockMovement {
   id: number;
   product_id: number;
+  product_variant_id: number;
   order_id: number | null;
   user_id: number | null;
   type: StockMovementType;
@@ -28,6 +29,7 @@ export interface StockMovement {
   created_at: string;
   updated_at: string;
   product?: Product | null;
+  variant?: ProductVariant | null;
   order?: StockMovementOrder | null;
   user?: StockMovementUser | null;
 }
@@ -35,6 +37,7 @@ export interface StockMovement {
 export interface StockMovementListParams {
   search?: string;
   product_id?: number;
+  product_variant_id?: number;
   type?: StockMovementType | "all";
   date_from?: string;
   date_to?: string;
@@ -55,6 +58,12 @@ export interface StockMovementListResponse {
 export interface ProductStockMovementsResponse {
   found: boolean;
   product: Product;
+  movements: StockMovementListResponse;
+}
+
+export interface VariantStockMovementsResponse {
+  found: boolean;
+  variant: ProductVariant & { product?: Product | null };
   movements: StockMovementListResponse;
 }
 

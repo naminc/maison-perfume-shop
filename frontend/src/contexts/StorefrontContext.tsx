@@ -17,11 +17,13 @@ import type { Product } from "@/types/product";
 
 export interface CartLine {
   productId: number;
+  variantId: number | null;
   quantity: number;
 }
 
 interface RawCartLine {
   productId?: number | string;
+  variantId?: number | string;
   quantity?: number;
 }
 
@@ -29,9 +31,9 @@ interface StorefrontContextValue {
   cart: CartLine[];
   cartCount: number;
   wishlistIds: number[];
-  addToCart: (productId: number, quantity?: number, maxStock?: number) => void;
-  updateCartQuantity: (productId: number, quantity: number, maxStock?: number) => void;
-  removeFromCart: (productId: number) => void;
+  addToCart: (productId: number, variantId: number, quantity?: number, maxStock?: number) => void;
+  updateCartQuantity: (productId: number, variantId: number | null, quantity: number, maxStock?: number) => void;
+  removeFromCart: (productId: number, variantId: number | null) => void;
   clearCart: () => void;
   toggleWishlist: (productId: number, product?: Product) => void;
   isInWishlist: (productId: number) => boolean;
@@ -69,17 +71,20 @@ function normalizeQuantity(value: unknown, maxStock?: number) {
 }
 
 function normalizeCart(lines: RawCartLine[]) {
-  const merged = new Map<number, number>();
+  const merged = new Map<string, CartLine>();
 
   for (const line of lines) {
     const productId = normalizeProductId(line.productId);
     if (!productId) continue;
+    const variantId = normalizeProductId(line.variantId);
 
     const quantity = normalizeQuantity(line.quantity);
-    merged.set(productId, (merged.get(productId) ?? 0) + quantity);
+    const key = `${productId}:${variantId ?? 0}`;
+    const current = merged.get(key);
+    merged.set(key, { productId, variantId, quantity: (current?.quantity ?? 0) + quantity });
   }
 
-  return Array.from(merged, ([productId, quantity]) => ({ productId, quantity }));
+  return Array.from(merged.values());
 }
 
 function normalizeWishlist(ids: Array<number | string>) {
@@ -169,46 +174,46 @@ export function StorefrontProvider({ children }: { children: ReactNode }) {
     }
   }, [localWishlistIds, queryClient, serverWishlistQuery.data, user]);
 
-  const addToCart = useCallback((productId: number, quantity = 1, maxStock?: number) => {
-    if (!Number.isInteger(productId) || productId <= 0) return;
+  const addToCart = useCallback((productId: number, variantId: number, quantity = 1, maxStock?: number) => {
+    if (!Number.isInteger(productId) || productId <= 0 || !Number.isInteger(variantId) || variantId <= 0) return;
 
     setCart((prev) => {
-      const existing = prev.find((line) => line.productId === productId);
+      const existing = prev.find((line) => line.productId === productId && line.variantId === variantId);
       const currentQuantity = existing?.quantity ?? 0;
       const nextQuantity = normalizeQuantity(currentQuantity + quantity, maxStock);
 
       if (nextQuantity <= 0) {
-        return prev.filter((line) => line.productId !== productId);
+        return prev.filter((line) => line.productId !== productId || line.variantId !== variantId);
       }
 
       if (existing) {
         return prev.map((line) =>
-          line.productId === productId
+          line.productId === productId && line.variantId === variantId
             ? { ...line, quantity: nextQuantity }
             : line,
         );
       }
 
-      return [...prev, { productId, quantity: nextQuantity }];
+      return [...prev, { productId, variantId, quantity: nextQuantity }];
     });
   }, []);
 
-  const updateCartQuantity = useCallback((productId: number, quantity: number, maxStock?: number) => {
+  const updateCartQuantity = useCallback((productId: number, variantId: number | null, quantity: number, maxStock?: number) => {
     setCart((prev) => {
       if (quantity <= 0) {
-        return prev.filter((line) => line.productId !== productId);
+        return prev.filter((line) => line.productId !== productId || line.variantId !== variantId);
       }
 
       return prev.map((line) =>
-        line.productId === productId
+        line.productId === productId && line.variantId === variantId
           ? { ...line, quantity: normalizeQuantity(quantity, maxStock) }
           : line,
       );
     });
   }, []);
 
-  const removeFromCart = useCallback((productId: number) => {
-    setCart((prev) => prev.filter((line) => line.productId !== productId));
+  const removeFromCart = useCallback((productId: number, variantId: number | null) => {
+    setCart((prev) => prev.filter((line) => line.productId !== productId || line.variantId !== variantId));
   }, []);
 
   const clearCart = useCallback(() => {

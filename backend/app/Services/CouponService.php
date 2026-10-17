@@ -6,9 +6,10 @@ use App\Enums\CouponStatus;
 use App\Enums\CouponType;
 use App\Enums\OrderStatus;
 use App\Enums\ProductStatus;
+use App\Enums\ProductVariantStatus;
 use App\Models\Coupon;
 use App\Models\Order;
-use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\Interfaces\CouponRepositoryInterface;
 use App\Services\Interfaces\CouponServiceInterface;
@@ -83,8 +84,8 @@ class CouponService extends BaseService implements CouponServiceInterface
     {
         return $this->executeSafe(function () use ($user, $payload) {
             $items = $this->normalizeItems($payload['items'] ?? []);
-            $products = $this->productsForItems($items);
-            $subtotal = $this->calculateSubtotal($items, $products);
+            $variants = $this->variantsForItems($items);
+            $subtotal = $this->calculateSubtotal($items, $variants);
             $shippingFee = $this->calculateShippingFee((string) ($payload['shipping_method'] ?? self::STANDARD_SHIPPING_METHOD), $subtotal);
             $preview = $this->previewForOrder($user, (string) $payload['code'], $subtotal, $shippingFee);
 
@@ -246,13 +247,22 @@ class CouponService extends BaseService implements CouponServiceInterface
 
         foreach ($items as $item) {
             $productId = (int) ($item['product_id'] ?? 0);
+            $variantId = (int) ($item['product_variant_id'] ?? 0);
             $quantity = (int) ($item['quantity'] ?? 0);
 
-            if ($productId <= 0 || $quantity <= 0) {
+            if ($productId <= 0 || $variantId <= 0 || $quantity <= 0) {
                 continue;
             }
 
-            $normalized[$productId] = ($normalized[$productId] ?? 0) + $quantity;
+            if (isset($normalized[$variantId])) {
+                if ($normalized[$variantId]['product_id'] !== $productId) {
+                    throw ValidationException::withMessages(['items' => ['Phiên bản không thuộc sản phẩm đã chọn.']]);
+                }
+
+                $normalized[$variantId]['quantity'] += $quantity;
+            } else {
+                $normalized[$variantId] = ['product_id' => $productId, 'quantity' => $quantity];
+            }
         }
 
         if ($normalized === []) {
@@ -264,23 +274,27 @@ class CouponService extends BaseService implements CouponServiceInterface
         return $normalized;
     }
 
-    private function productsForItems(array $items): Collection
+    private function variantsForItems(array $items): Collection
     {
-        return Product::query()
+        return ProductVariant::query()
+            ->with('product')
             ->whereIn('id', array_keys($items))
             ->get()
             ->keyBy('id');
     }
 
-    private function calculateSubtotal(array $items, Collection $products): float
+    private function calculateSubtotal(array $items, Collection $variants): float
     {
         $subtotal = 0.0;
 
-        foreach ($items as $productId => $quantity) {
-            /** @var Product|null $product */
-            $product = $products->get($productId);
+        foreach ($items as $variantId => $item) {
+            $productId = $item['product_id'];
+            $quantity = $item['quantity'];
+            /** @var ProductVariant|null $variant */
+            $variant = $variants->get($variantId);
+            $product = $variant?->product;
 
-            if (! $product) {
+            if (! $variant || ! $product || $variant->product_id !== $productId) {
                 throw ValidationException::withMessages([
                     'items' => ["Sản phẩm #{$productId} không tồn tại."],
                 ]);
@@ -292,13 +306,17 @@ class CouponService extends BaseService implements CouponServiceInterface
                 ]);
             }
 
-            if ($product->stock < $quantity) {
+            if ($this->enumValue($variant->status) !== ProductVariantStatus::Active->value) {
+                throw ValidationException::withMessages(['items' => ["Phiên bản {$variant->sku} đang tạm ẩn."]]);
+            }
+
+            if ($variant->stock < $quantity) {
                 throw ValidationException::withMessages([
-                    'items' => ["Sản phẩm {$product->name} chỉ còn {$product->stock} sản phẩm trong kho."],
+                    'items' => ["Phiên bản {$variant->sku} chỉ còn {$variant->stock} sản phẩm trong kho."],
                 ]);
             }
 
-            $subtotal += (float) ($product->sale_price ?? $product->price) * $quantity;
+            $subtotal += (float) ($variant->sale_price ?? $variant->price) * $quantity;
         }
 
         return $subtotal;

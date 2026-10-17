@@ -16,16 +16,10 @@ return new class extends Migration
             $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->string('sku')->nullable()->unique();
             $table->string('short_description', 500)->nullable();
             $table->text('description')->nullable();
             $table->string('image')->nullable();
             $table->enum('gender', ProductGender::values());
-            $table->string('concentration')->nullable();
-            $table->unsignedInteger('volume_ml')->nullable();
-            $table->decimal('price', 12, 2);
-            $table->decimal('sale_price', 12, 2)->nullable();
-            $table->unsignedInteger('stock')->default(0);
             $table->enum('status', ProductStatus::values())->default(ProductStatus::Active->value);
             $table->boolean('is_featured')->default(false);
             $table->unsignedInteger('sort_order')->default(0);

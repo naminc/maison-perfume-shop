@@ -23,6 +23,13 @@ class StockMovementRepository implements StockMovementRepositoryInterface
             ->paginate($this->perPage($filters));
     }
 
+    public function getByVariant(int $variantId, array $filters): LengthAwarePaginator
+    {
+        return $this->filteredQuery($filters)
+            ->where('product_variant_id', $variantId)
+            ->paginate($this->perPage($filters));
+    }
+
     public function create(array $data): StockMovement
     {
         return $this->model->newQuery()->create($data)->load($this->relations());
@@ -38,6 +45,7 @@ class StockMovementRepository implements StockMovementRepositoryInterface
         return $this->model->newQuery()
             ->with($this->relations())
             ->when(! empty($filters['product_id']), fn ($query) => $query->where('product_id', (int) $filters['product_id']))
+            ->when(! empty($filters['product_variant_id']), fn ($query) => $query->where('product_variant_id', (int) $filters['product_variant_id']))
             ->when(! empty($filters['type']) && in_array($filters['type'], StockMovementType::values(), true), fn ($query) => $query->where('type', $filters['type']))
             ->when(! empty($filters['date_from']), fn ($query) => $query->whereDate('created_at', '>=', $filters['date_from']))
             ->when(! empty($filters['date_to']), fn ($query) => $query->whereDate('created_at', '<=', $filters['date_to']))
@@ -46,9 +54,8 @@ class StockMovementRepository implements StockMovementRepositoryInterface
                 $query->where(function ($query) use ($search) {
                     $query->where('reference', 'like', "%{$search}%")
                         ->orWhere('note', 'like', "%{$search}%")
-                        ->orWhereHas('product', fn ($productQuery) => $productQuery
-                            ->where('name', 'like', "%{$search}%")
-                            ->orWhere('sku', 'like', "%{$search}%"));
+                        ->orWhereHas('product', fn ($productQuery) => $productQuery->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('variant', fn ($variantQuery) => $variantQuery->where('sku', 'like', "%{$search}%"));
                 });
             })
             ->latest('created_at')
@@ -58,8 +65,9 @@ class StockMovementRepository implements StockMovementRepositoryInterface
     private function relations(): array
     {
         return [
-            'product:id,name,slug,sku,image,stock,brand_id',
+            'product:id,name,slug,image,brand_id',
             'product.brand:id,name',
+            'variant:id,product_id,sku,name,concentration,volume_ml,stock',
             'order:id,order_code',
             'user:id,full_name,email',
         ];

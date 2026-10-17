@@ -63,10 +63,10 @@ export default function Cart() {
             <section className="space-y-3">
               {lines.map((line) => (
                 <CartLineCard
-                  key={line.productId}
+                  key={`${line.productId}:${line.variantId ?? 0}`}
                   line={line}
-                  onRemove={() => removeFromCart(line.productId)}
-                  onUpdateQuantity={(quantity) => updateCartQuantity(line.productId, quantity, line.product?.stock)}
+                  onRemove={() => removeFromCart(line.productId, line.variantId)}
+                  onUpdateQuantity={(quantity) => updateCartQuantity(line.productId, line.variantId, quantity, line.variant?.stock)}
                 />
               ))}
             </section>
@@ -164,7 +164,7 @@ function CartLineCard({
                   {product.name}
                 </Link>
                 <p className="mt-1 text-xs text-stone-500">
-                  {[product.brand?.name, product.volume_ml ? `${product.volume_ml}ml` : null].filter(Boolean).join(" · ")}
+                  {[product.brand?.name, line.variant?.concentration, line.variant?.volume_ml ? `${line.variant.volume_ml}ml` : null].filter(Boolean).join(" · ")}
                 </p>
               </>
             ) : (
@@ -202,7 +202,7 @@ function CartLineCard({
             <button
               type="button"
               onClick={() => onUpdateQuantity(line.quantity + 1)}
-              disabled={!product || line.quantity >= product.stock}
+              disabled={!product || !line.variant || line.quantity >= line.variant.stock}
               className="grid h-8 w-8 place-items-center rounded-full hover:bg-stone-100 disabled:opacity-40"
               aria-label="Tăng"
             >
@@ -212,9 +212,9 @@ function CartLineCard({
           <div className="text-right">
             {product ? (
               <>
-                <p className="font-semibold text-stone-900">{formatVnd(productPrice(product) * line.quantity)}</p>
+                <p className="font-semibold text-stone-900">{formatVnd(productPrice(product, line.variant) * line.quantity)}</p>
                 {line.quantity > 1 && (
-                  <p className="text-xs text-stone-400">{formatVnd(productPrice(product))} / sản phẩm</p>
+                  <p className="text-xs text-stone-400">{formatVnd(productPrice(product, line.variant))} / sản phẩm</p>
                 )}
               </>
             ) : (

@@ -18,7 +18,7 @@ class ProductRepository implements ProductRepositoryInterface
         $perPage = max(1, min($perPage, 100));
 
         return $this->baseFilteredQuery($filters)
-            ->with(['brand:id,name', 'category:id,name'])
+            ->with(['brand:id,name', 'category:id,name', 'variants', 'defaultVariant'])
             ->withCount('approvedReviews as rating_count')
             ->withAvg('approvedReviews as rating_average', 'rating')
             ->orderBy('sort_order')
@@ -30,7 +30,7 @@ class ProductRepository implements ProductRepositoryInterface
     {
         return $this->model
             ->newQuery()
-            ->with(['brand:id,name', 'category:id,name'])
+            ->with(['brand:id,name', 'category:id,name', 'variants', 'defaultVariant'])
             ->withCount('approvedReviews as rating_count')
             ->withAvg('approvedReviews as rating_average', 'rating')
             ->find($id);
@@ -40,24 +40,30 @@ class ProductRepository implements ProductRepositoryInterface
     {
         return $this->model
             ->newQuery()
-            ->with(['brand:id,name,slug', 'category:id,name,slug'])
+            ->with([
+                'brand:id,name,slug',
+                'category:id,name,slug',
+                'variants' => fn ($query) => $query->active(),
+                'defaultVariant' => fn ($query) => $query->active(),
+            ])
             ->withCount('approvedReviews as rating_count')
             ->withAvg('approvedReviews as rating_average', 'rating')
             ->active()
+            ->whereHas('activeVariants')
             ->where('slug', $slug)
             ->first();
     }
 
     public function create(array $data): Product
     {
-        return $this->model->create($data)->fresh(['brand:id,name', 'category:id,name']);
+        return $this->model->create($data)->fresh(['brand:id,name', 'category:id,name', 'variants', 'defaultVariant']);
     }
 
     public function update(Product $product, array $data): Product
     {
         $product->update($data);
 
-        return $product->fresh(['brand:id,name', 'category:id,name']);
+        return $product->fresh(['brand:id,name', 'category:id,name', 'variants', 'defaultVariant']);
     }
 
     public function delete(Product $product): bool
@@ -70,15 +76,26 @@ class ProductRepository implements ProductRepositoryInterface
         $perPage = (int) ($filters['per_page'] ?? 12);
         $perPage = max(1, min($perPage, 100));
 
-        return $this->baseFilteredQuery($filters)
-            ->with(['brand:id,name,slug', 'category:id,name,slug'])
+        $query = $this->baseFilteredQuery($filters)
+            ->with([
+                'brand:id,name,slug',
+                'category:id,name,slug',
+                'variants' => fn ($query) => $query->active(),
+                'defaultVariant' => fn ($query) => $query->active(),
+            ])
             ->withCount('approvedReviews as rating_count')
             ->withAvg('approvedReviews as rating_average', 'rating')
             ->active()
-            ->orderByDesc('is_featured')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->paginate($perPage);
+            ->whereHas('activeVariants');
+
+        match ($filters['sort'] ?? 'popular') {
+            'price-asc' => $query->orderByRaw($this->effectivePriceSql().' ASC'),
+            'price-desc' => $query->orderByRaw($this->effectivePriceSql().' DESC'),
+            'newest' => $query->latest('updated_at'),
+            default => $query->orderByDesc('is_featured')->orderBy('sort_order')->orderBy('name'),
+        };
+
+        return $query->paginate($perPage);
     }
 
     public function nextSortOrder(): int
@@ -111,7 +128,7 @@ class ProductRepository implements ProductRepositoryInterface
                     $query
                         ->where('name', 'like', "%{$search}%")
                         ->orWhere('slug', 'like', "%{$search}%")
-                        ->orWhere('sku', 'like', "%{$search}%");
+                        ->orWhereHas('variants', fn ($variants) => $variants->where('sku', 'like', "%{$search}%"));
                 });
             })
             ->when(! empty($filters['status']) && in_array($filters['status'], ProductStatus::values(), true), function ($query) use ($filters) {
@@ -124,6 +141,14 @@ class ProductRepository implements ProductRepositoryInterface
             ->when(! empty($filters['category_id']), fn ($query) => $query->where('category_id', (int) $filters['category_id']))
             ->when(array_key_exists('is_featured', $filters) && $filters['is_featured'] !== null && $filters['is_featured'] !== '', function ($query) use ($filters) {
                 $query->where('is_featured', filter_var($filters['is_featured'], FILTER_VALIDATE_BOOL));
+            })
+            ->when(filter_var($filters['in_stock'] ?? false, FILTER_VALIDATE_BOOL), function ($query) {
+                $query->whereHas('activeVariants', fn ($variants) => $variants->where('stock', '>', 0));
             });
+    }
+
+    private function effectivePriceSql(): string
+    {
+        return "(SELECT MIN(COALESCE(sale_price, price)) FROM product_variants WHERE product_variants.product_id = products.id AND product_variants.status = 'active' AND product_variants.deleted_at IS NULL)";
     }
 }

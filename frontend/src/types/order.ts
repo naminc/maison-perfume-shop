@@ -20,9 +20,11 @@ export interface OrderItem {
   id: number;
   order_id: number;
   product_id: number | null;
+  product_variant_id: number | null;
   product_name: string;
   product_slug: string | null;
   product_sku: string | null;
+  variant_name: string | null;
   product_image: string | null;
   brand_name: string | null;
   category_name: string | null;
@@ -82,6 +84,7 @@ export interface OrderPayload {
   coupon_code?: string | null;
   items: Array<{
     product_id: number;
+    product_variant_id: number;
     quantity: number;
   }>;
 }

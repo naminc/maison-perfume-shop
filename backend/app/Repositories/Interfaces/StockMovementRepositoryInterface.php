@@ -11,6 +11,8 @@ interface StockMovementRepositoryInterface
 
     public function getByProduct(int $productId, array $filters): LengthAwarePaginator;
 
+    public function getByVariant(int $variantId, array $filters): LengthAwarePaginator;
+
     public function create(array $data): StockMovement;
 
     public function findById(int $id): ?StockMovement;

@@ -24,10 +24,16 @@ class WishlistRepository implements WishlistRepositoryInterface
         }
 
         $products = Product::query()
-            ->with(['brand:id,name,slug', 'category:id,name,slug'])
+            ->with([
+                'brand:id,name,slug',
+                'category:id,name,slug',
+                'variants' => fn ($query) => $query->active(),
+                'defaultVariant' => fn ($query) => $query->active(),
+            ])
             ->withCount('approvedReviews as rating_count')
             ->withAvg('approvedReviews as rating_average', 'rating')
             ->active()
+            ->whereHas('activeVariants')
             ->whereIn('id', $wishlists)
             ->get()
             ->keyBy('id');

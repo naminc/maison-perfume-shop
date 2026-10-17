@@ -42,9 +42,11 @@ export interface DashboardRecentOrder {
 
 export interface DashboardLowStockProduct {
   id: number;
+  product_id: number;
   name: string;
+  variant_name: string | null;
   slug: string;
-  sku: string | null;
+  sku: string;
   image: string | null;
   stock: number;
 }

@@ -43,6 +43,18 @@ import type { ApiErrorResponse } from "@/types/auth";
 import type { AdminStockAdjustmentType, StockMovement, StockMovementType } from "@/types/inventory";
 import type { Product } from "@/types/product";
 
+interface InventoryRow {
+  id: number;
+  productId: number;
+  name: string;
+  variantName: string | null;
+  sku: string;
+  stock: number;
+  image: string | null;
+  brand?: Product["brand"];
+  updated_at: string;
+}
+
 type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock";
 
 interface AdjustmentForm {
@@ -66,14 +78,14 @@ export default function Inventory() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [movementPage, setMovementPage] = useState(1);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<InventoryRow | null>(null);
+  const [historyProduct, setHistoryProduct] = useState<InventoryRow | null>(null);
   const [form, setForm] = useState<AdjustmentForm>(EMPTY_ADJUSTMENT);
   const [isExporting, setIsExporting] = useState(false);
 
   const productsQuery = useAdminProducts({ status: "all", per_page: 100 });
   const movementsQuery = useStockMovements({
-    product_id: historyProduct?.id,
+    product_variant_id: historyProduct?.id,
     type: movementType,
     date_from: dateFrom || undefined,
     date_to: dateTo || undefined,
@@ -82,14 +94,17 @@ export default function Inventory() {
   });
   const adjustStock = useAdjustProductStock();
 
-  const products = productsQuery.data?.data ?? [];
+  const products = useMemo(
+    () => flattenProducts(productsQuery.data?.data ?? []),
+    [productsQuery.data?.data],
+  );
   const filteredProducts = useMemo(() => {
     const keyword = search.trim().toLocaleLowerCase("vi");
 
     return products.filter((product) => {
       const matchesSearch = !keyword
         || product.name.toLocaleLowerCase("vi").includes(keyword)
-        || product.sku?.toLocaleLowerCase("vi").includes(keyword);
+        || product.sku.toLocaleLowerCase("vi").includes(keyword);
       const matchesStock = stockFilter === "all"
         || (stockFilter === "out_of_stock" && product.stock === 0)
         || (stockFilter === "low_stock" && product.stock > 0 && product.stock <= LOW_STOCK_THRESHOLD)
@@ -109,7 +124,7 @@ export default function Inventory() {
   const delta = calculateDelta(form);
   const projectedStock = selectedProduct ? selectedProduct.stock + delta : 0;
 
-  const openAdjustment = (product: Product) => {
+  const openAdjustment = (product: InventoryRow) => {
     setSelectedProduct(product);
     setForm(EMPTY_ADJUSTMENT);
   };
@@ -122,7 +137,7 @@ export default function Inventory() {
     if (!Number.isInteger(quantity) || quantity === 0 || projectedStock < 0) return;
 
     adjustStock.mutate({
-      productId: selectedProduct.id,
+      variantId: selectedProduct.id,
       payload: {
         type: form.type,
         quantity,
@@ -147,7 +162,7 @@ export default function Inventory() {
     try {
       const response = await adminProductApi.getProducts({ status: "all", per_page: 100 });
       await exportExcel({
-        rows: response.data,
+        rows: flattenProducts(response.data),
         columns: INVENTORY_EXPORT_COLUMNS,
         filename: "maison-inventory",
         sheetName: "Tồn kho",
@@ -175,7 +190,7 @@ export default function Inventory() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={Boxes} label="Tổng sản phẩm" value={stats.products} />
+        <StatCard icon={Boxes} label="Tổng phiên bản" value={stats.products} />
         <StatCard icon={PackageCheck} label="Tổng số lượng tồn" value={stats.units} />
         <StatCard icon={PackageX} label="Hết hàng" value={stats.outOfStock} destructive />
         <StatCard icon={ClipboardList} label="Sắp hết" value={stats.lowStock} warning />
@@ -226,7 +241,7 @@ export default function Inventory() {
               <TableRow key={product.id}>
                 <TableCell className="text-center text-muted-foreground">{index + 1}</TableCell>
                 <TableCell><ProductImage product={product} /></TableCell>
-                <TableCell className="font-medium">{product.name}</TableCell>
+                <TableCell><div className="font-medium">{product.name}</div><div className="text-xs text-muted-foreground">{product.variantName ?? "Phiên bản mặc định"}</div></TableCell>
                 <TableCell className="font-mono text-xs text-muted-foreground">{product.sku ?? "-"}</TableCell>
                 <TableCell>{product.brand?.name ?? "-"}</TableCell>
                 <TableCell className="text-center font-mono font-semibold">{product.stock}</TableCell>
@@ -351,7 +366,7 @@ function MovementTable({ movements, isLoading, page, pagination, onPageChange }:
               : movements.map((movement) => (
                 <TableRow key={movement.id}>
                   <TableCell className="whitespace-nowrap text-muted-foreground">{formatDateTime(movement.created_at)}</TableCell>
-                  <TableCell><div className="font-medium">{movement.product?.name ?? `#${movement.product_id}`}</div><div className="font-mono text-xs text-muted-foreground">{movement.product?.sku ?? "-"}</div></TableCell>
+                  <TableCell><div className="font-medium">{movement.product?.name ?? `#${movement.product_id}`}</div><div className="font-mono text-xs text-muted-foreground">{movement.variant?.sku ?? "-"}</div></TableCell>
                   <TableCell>{STOCK_MOVEMENT_LABELS[movement.type]}</TableCell>
                   <TableCell className={`text-center font-mono font-semibold ${movement.quantity > 0 ? "text-emerald-700" : "text-destructive"}`}>{movement.quantity > 0 ? "+" : ""}{movement.quantity}</TableCell>
                   <TableCell className="font-mono">{movement.stock_before} → {movement.stock_after}</TableCell>
@@ -380,7 +395,7 @@ function StockBadge({ stock }: { stock: number }) {
   return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Còn hàng</Badge>;
 }
 
-function ProductImage({ product }: { product: Product }) {
+function ProductImage({ product }: { product: InventoryRow }) {
   return product.image ? <img src={product.image} alt={product.name} className="h-10 w-10 rounded-md border object-cover" /> : <div className="grid h-10 w-10 place-items-center rounded-md border bg-muted"><Boxes className="h-4 w-4 text-muted-foreground" /></div>;
 }
 
@@ -402,17 +417,32 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   return (errors ? Object.values(errors).flat().find(Boolean) : undefined) ?? err.response?.data?.message ?? err.message ?? fallback;
 }
 
-function stockStatus(product: Product) {
+function stockStatus(product: InventoryRow) {
   if (product.stock === 0) return "Hết hàng";
   if (product.stock <= LOW_STOCK_THRESHOLD) return "Sắp hết";
   return "Còn hàng";
 }
 
-const INVENTORY_EXPORT_COLUMNS: ExcelColumn<Product>[] = [
+const INVENTORY_EXPORT_COLUMNS: ExcelColumn<InventoryRow>[] = [
   { header: "Sản phẩm", accessor: (product) => product.name },
+  { header: "Phiên bản", accessor: (product) => product.variantName },
   { header: "SKU", accessor: (product) => product.sku },
   { header: "Thương hiệu", accessor: (product) => product.brand?.name },
   { header: "Tồn kho", accessor: (product) => product.stock },
   { header: "Trạng thái kho", accessor: stockStatus },
   { header: "Cập nhật gần nhất", accessor: (product) => formatDateTime(product.updated_at, "") },
 ];
+
+function flattenProducts(products: Product[]): InventoryRow[] {
+  return products.flatMap((product) => product.variants.map((variant) => ({
+    id: variant.id,
+    productId: product.id,
+    name: product.name,
+    variantName: variant.name,
+    sku: variant.sku,
+    stock: variant.stock,
+    image: product.image,
+    brand: product.brand,
+    updated_at: variant.updated_at ?? product.updated_at,
+  })));
+}

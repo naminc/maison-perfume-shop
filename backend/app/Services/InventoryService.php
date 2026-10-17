@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Enums\StockMovementType;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\PurchaseOrder;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Repositories\Interfaces\StockMovementRepositoryInterface;
@@ -34,15 +36,32 @@ class InventoryService extends BaseService implements InventoryServiceInterface
 
             return [
                 'found' => true,
-                'product' => $product->load('brand:id,name'),
+                'product' => $product->load(['brand:id,name', 'variants']),
                 'movements' => $this->stockMovementRepository->getByProduct($productId, $filters),
             ];
         }, 'getProductMovements');
     }
 
-    public function adjustStock(Product $product, int $quantity, string $type, ?User $user, ?string $note, ?string $reference = null): array
+    public function getVariantMovements(int $variantId, array $filters): array
     {
-        return $this->executeTransaction(function () use ($product, $quantity, $type, $user, $note, $reference) {
+        return $this->executeSafe(function () use ($variantId, $filters) {
+            $variant = ProductVariant::query()->with('product:id,name,slug,image')->find($variantId);
+
+            if (! $variant) {
+                return ['found' => false];
+            }
+
+            return [
+                'found' => true,
+                'variant' => $variant,
+                'movements' => $this->stockMovementRepository->getByVariant($variantId, $filters),
+            ];
+        }, 'getVariantMovements');
+    }
+
+    public function adjustStock(ProductVariant $variant, int $quantity, string $type, ?User $user, ?string $note, ?string $reference = null): array
+    {
+        return $this->executeTransaction(function () use ($variant, $quantity, $type, $user, $note, $reference) {
             $delta = match ($type) {
                 StockMovementType::Import->value => abs($quantity),
                 StockMovementType::Export->value => -abs($quantity),
@@ -50,14 +69,14 @@ class InventoryService extends BaseService implements InventoryServiceInterface
                 default => throw ValidationException::withMessages(['type' => ['Loại điều chỉnh tồn kho không hợp lệ.']]),
             };
 
-            return $this->applyMovement($product, $delta, $type, $user, null, $reference, $note);
+            return $this->applyMovement($variant, $delta, $type, $user, null, $reference, $note);
         }, 'adjustStock');
     }
 
-    public function decreaseForOrder(Product $product, int $quantity, Order $order): StockMovement
+    public function decreaseForOrder(ProductVariant $variant, int $quantity, Order $order): StockMovement
     {
         return $this->applyMovement(
-            $product,
+            $variant,
             -abs($quantity),
             StockMovementType::Order->value,
             $order->user,
@@ -67,10 +86,10 @@ class InventoryService extends BaseService implements InventoryServiceInterface
         );
     }
 
-    public function restoreForCancelledOrder(Product $product, int $quantity, Order $order): StockMovement
+    public function restoreForCancelledOrder(ProductVariant $variant, int $quantity, Order $order): StockMovement
     {
         return $this->applyMovement(
-            $product,
+            $variant,
             abs($quantity),
             StockMovementType::OrderCancelled->value,
             $order->user,
@@ -80,8 +99,21 @@ class InventoryService extends BaseService implements InventoryServiceInterface
         );
     }
 
+    public function importForPurchaseOrder(ProductVariant $variant, int $quantity, PurchaseOrder $purchaseOrder, User $user): StockMovement
+    {
+        return $this->applyMovement(
+            $variant,
+            abs($quantity),
+            StockMovementType::Import->value,
+            $user,
+            null,
+            $purchaseOrder->code,
+            'Nhập kho từ phiếu nhập '.$purchaseOrder->code.'.',
+        );
+    }
+
     private function applyMovement(
-        Product $product,
+        ProductVariant $variant,
         int $quantity,
         string $type,
         ?User $user,
@@ -93,14 +125,14 @@ class InventoryService extends BaseService implements InventoryServiceInterface
             throw ValidationException::withMessages(['quantity' => ['Số lượng thay đổi phải khác 0.']]);
         }
 
-        return DB::transaction(function () use ($product, $quantity, $type, $user, $order, $reference, $note) {
-            $lockedProduct = Product::withTrashed()->lockForUpdate()->find($product->id);
+        return DB::transaction(function () use ($variant, $quantity, $type, $user, $order, $reference, $note) {
+            $lockedVariant = ProductVariant::withTrashed()->lockForUpdate()->find($variant->id);
 
-            if (! $lockedProduct) {
-                throw ValidationException::withMessages(['product' => ['Sản phẩm không tồn tại.']]);
+            if (! $lockedVariant) {
+                throw ValidationException::withMessages(['product_variant' => ['Phiên bản sản phẩm không tồn tại.']]);
             }
 
-            $stockBefore = (int) $lockedProduct->stock;
+            $stockBefore = (int) $lockedVariant->stock;
             $stockAfter = $stockBefore + $quantity;
 
             if ($stockAfter < 0) {
@@ -109,10 +141,11 @@ class InventoryService extends BaseService implements InventoryServiceInterface
                 ]);
             }
 
-            $lockedProduct->forceFill(['stock' => $stockAfter])->save();
+            $lockedVariant->forceFill(['stock' => $stockAfter])->save();
 
             return $this->stockMovementRepository->create([
-                'product_id' => $lockedProduct->id,
+                'product_id' => $lockedVariant->product_id,
+                'product_variant_id' => $lockedVariant->id,
                 'order_id' => $order?->id,
                 'user_id' => $user?->id,
                 'type' => $type,

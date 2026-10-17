@@ -10,7 +10,9 @@ use App\Http\Controllers\Api\V1\Admin\OrderController;
 use App\Http\Controllers\Api\V1\Admin\PostController;
 use App\Http\Controllers\Api\V1\Admin\ProductController;
 use App\Http\Controllers\Api\V1\Admin\ProductReviewController;
+use App\Http\Controllers\Api\V1\Admin\PurchaseOrderController;
 use App\Http\Controllers\Api\V1\Admin\SettingController;
+use App\Http\Controllers\Api\V1\Admin\SupplierController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,7 +20,12 @@ Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
     Route::get('dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
     Route::get('inventory/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
     Route::get('products/{product}/stock-movements', [InventoryController::class, 'productMovements'])->name('products.stock-movements');
-    Route::post('products/{product}/stock-adjustments', [InventoryController::class, 'adjust'])->name('products.stock-adjustments');
+    Route::get('product-variants/{variant}/stock-movements', [InventoryController::class, 'variantMovements'])->name('product-variants.stock-movements');
+    Route::post('product-variants/{variant}/stock-adjustments', [InventoryController::class, 'adjust'])->name('product-variants.stock-adjustments');
+    Route::get('purchase-orders/summary', [PurchaseOrderController::class, 'summary'])->name('purchase-orders.summary');
+    Route::patch('purchase-orders/{purchaseOrder}/status', [PurchaseOrderController::class, 'updateStatus'])->name('purchase-orders.update-status');
+    Route::apiResource('purchase-orders', PurchaseOrderController::class);
+    Route::apiResource('suppliers', SupplierController::class);
     Route::apiResource('contacts', ContactController::class)->only(['index', 'show', 'update', 'destroy']);
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('brands', BrandController::class);

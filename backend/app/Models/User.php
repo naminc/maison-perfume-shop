@@ -55,4 +55,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(StockMovement::class);
     }
+
+    public function createdPurchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class, 'created_by');
+    }
+
+    public function receivedPurchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class, 'received_by');
+    }
 }

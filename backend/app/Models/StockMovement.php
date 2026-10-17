@@ -13,6 +13,7 @@ class StockMovement extends Model
 
     protected $fillable = [
         'product_id',
+        'product_variant_id',
         'order_id',
         'user_id',
         'type',
@@ -25,6 +26,7 @@ class StockMovement extends Model
 
     protected $casts = [
         'product_id' => 'integer',
+        'product_variant_id' => 'integer',
         'order_id' => 'integer',
         'user_id' => 'integer',
         'type' => StockMovementType::class,
@@ -36,6 +38,11 @@ class StockMovement extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class)->withTrashed();
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id')->withTrashed();
     }
 
     public function order(): BelongsTo

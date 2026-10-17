@@ -175,7 +175,7 @@ export default function OrderDetail() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{item.product_name}</p>
                     <p className="text-xs text-stone-500">
-                      {[item.concentration, item.volume_ml ? `${item.volume_ml}ml` : null, item.brand_name].filter(Boolean).join(" · ")} × {item.quantity}
+                      {[item.variant_name, item.product_sku, item.concentration, item.volume_ml ? `${item.volume_ml}ml` : null, item.brand_name].filter(Boolean).join(" · ")} × {item.quantity}
                     </p>
                     {order.status === "completed" && item.product_id && reviewableByOrderItemId.has(item.id) && (
                       <button

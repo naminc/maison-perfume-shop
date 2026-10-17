@@ -253,17 +253,21 @@ class ProductReviewTest extends TestCase
             'completed_at' => $status === OrderStatus::Completed ? now() : null,
         ]);
 
+        $variant = $product->defaultVariant;
+
         OrderItem::query()->create([
             'order_id' => $order->id,
             'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
             'product_name' => $product->name,
             'product_slug' => $product->slug,
-            'product_sku' => $product->sku,
+            'product_sku' => $variant->sku,
+            'variant_name' => $variant->name,
             'product_image' => $product->image,
             'brand_name' => null,
             'category_name' => null,
-            'volume_ml' => $product->volume_ml,
-            'concentration' => $product->concentration,
+            'volume_ml' => $variant->volume_ml,
+            'concentration' => $variant->concentration,
             'unit_price' => 1200000,
             'original_price' => 1200000,
             'quantity' => 1,
@@ -277,7 +281,7 @@ class ProductReviewTest extends TestCase
     {
         $name = $overrides['name'] ?? 'Review Test Perfume ' . Str::random(8);
 
-        return Product::query()->create(array_merge([
+        $attributes = array_merge([
             'name' => $name,
             'slug' => Str::slug($name) . '-' . Str::lower(Str::random(6)),
             'sku' => 'REVIEW-' . Str::upper(Str::random(8)),
@@ -290,7 +294,12 @@ class ProductReviewTest extends TestCase
             'status' => ProductStatus::Active->value,
             'is_featured' => false,
             'sort_order' => 1,
-        ], $overrides));
+        ], $overrides);
+        $variant = collect($attributes)->only(['sku', 'concentration', 'volume_ml', 'price', 'sale_price', 'stock'])->all();
+        $product = Product::query()->create(collect($attributes)->except(array_keys($variant))->all());
+        $product->variants()->create([...$variant, 'status' => 'active', 'is_default' => true, 'sort_order' => 1]);
+
+        return $product->fresh(['variants', 'defaultVariant']);
     }
 
     private function ensureGeo(): array

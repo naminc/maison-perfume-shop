@@ -12,6 +12,7 @@ return new class extends Migration
         Schema::create('stock_movements', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+            $table->foreignId('product_variant_id')->constrained('product_variants')->cascadeOnDelete();
             $table->foreignId('order_id')->nullable()->constrained('orders')->nullOnDelete();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->enum('type', StockMovementType::values());
@@ -23,10 +24,12 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index('product_id');
+            $table->index('product_variant_id');
             $table->index('order_id');
             $table->index('type');
             $table->index('created_at');
             $table->index(['product_id', 'created_at']);
+            $table->index(['product_variant_id', 'created_at']);
         });
     }
 

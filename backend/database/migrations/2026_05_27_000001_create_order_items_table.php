@@ -12,9 +12,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('order_id')->constrained('orders')->cascadeOnDelete();
             $table->foreignId('product_id')->nullable()->constrained('products')->nullOnDelete();
+            $table->foreignId('product_variant_id')->constrained('product_variants')->restrictOnDelete();
             $table->string('product_name');
             $table->string('product_slug')->nullable();
             $table->string('product_sku')->nullable();
+            $table->string('variant_name')->nullable();
             $table->string('product_image')->nullable();
             $table->string('brand_name')->nullable();
             $table->string('category_name')->nullable();
@@ -28,6 +30,7 @@ return new class extends Migration
 
             $table->index('order_id');
             $table->index('product_id');
+            $table->index('product_variant_id');
         });
     }
 

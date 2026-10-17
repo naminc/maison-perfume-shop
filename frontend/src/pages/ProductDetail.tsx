@@ -10,7 +10,7 @@ import { useProducts, useProductBySlug } from "@/hooks/useProducts";
 import { useProductReviews, useProductReviewSummary } from "@/hooks/useProductReviews";
 import { useStorefront } from "@/hooks/useStorefront";
 import { formatDateTime } from "@/lib/date-time";
-import { formatVnd, hasProductSale, productOriginalPrice, productPrice } from "@/lib/product-utils";
+import { defaultProductVariant, formatVnd, hasProductSale, productOriginalPrice, productPrice } from "@/lib/product-utils";
 import type { ProductReview } from "@/types/product-review";
 
 export default function ProductDetail() {
@@ -21,14 +21,22 @@ export default function ProductDetail() {
   const reviewsQuery = useProductReviews(slug, { per_page: PUBLIC_PRODUCT_REVIEW_PAGE_SIZE });
   const product = productQuery.data;
   const [qty, setQty] = useState(1);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [tab, setTab] = useState<"desc" | "details">("desc");
   const { addToCart, toggleWishlist, isInWishlist } = useStorefront();
+  const selectedVariant = useMemo(() => {
+    if (!product) return null;
+
+    return product.variants.find((variant) => variant.id === selectedVariantId)
+      ?? defaultProductVariant(product);
+  }, [product, selectedVariantId]);
 
   useEffect(() => {
-    if (!product) return;
+    if (!product || !selectedVariant) return;
 
-    setQty((current) => Math.min(Math.max(1, current), Math.max(1, product.stock)));
-  }, [product]);
+    setSelectedVariantId(selectedVariant.id);
+    setQty((current) => Math.min(Math.max(1, current), Math.max(1, selectedVariant.stock)));
+  }, [product, selectedVariant]);
 
   const relatedQuery = useProducts({
     brand_id: product?.brand_id ?? -1,
@@ -69,8 +77,8 @@ export default function ProductDetail() {
     );
   }
 
-  const inStock = product.stock > 0;
-  const hasSale = hasProductSale(product);
+  const inStock = Boolean(selectedVariant && selectedVariant.status === "active" && selectedVariant.stock > 0);
+  const hasSale = hasProductSale(product, selectedVariant);
   const liked = isInWishlist(product.id);
   const ratingAverage = Number(reviewSummaryQuery.data?.rating_average ?? product.rating_average ?? 0);
   const ratingCount = Number(reviewSummaryQuery.data?.rating_count ?? product.rating_count ?? 0);
@@ -78,14 +86,16 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (!inStock) return;
 
-    addToCart(product.id, qty, product.stock);
+    if (!selectedVariant) return;
+    addToCart(product.id, selectedVariant.id, qty, selectedVariant.stock);
     toast.success(`Đã thêm ${qty} x ${product.name} vào giỏ`);
   };
 
   const buyNow = () => {
     if (!inStock) return;
 
-    addToCart(product.id, qty, product.stock);
+    if (!selectedVariant) return;
+    addToCart(product.id, selectedVariant.id, qty, selectedVariant.stock);
     toast.success(`Đã thêm ${qty} x ${product.name} vào giỏ`);
     navigate("/checkout");
   };
@@ -115,19 +125,19 @@ export default function ProductDetail() {
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-stone-600">
-            {product.sku && <span className="font-mono text-xs text-stone-500">SKU: {product.sku}</span>}
+            {selectedVariant?.sku && <span className="font-mono text-xs text-stone-500">SKU: {selectedVariant.sku}</span>}
             <span className="text-stone-300">|</span>
             <span className={inStock ? "text-emerald-700" : "text-red-600"}>
-              {inStock ? `Còn ${product.stock} sản phẩm` : "Hết hàng"}
+              {inStock ? `Còn ${selectedVariant?.stock ?? 0} sản phẩm` : "Hết hàng"}
             </span>
           </div>
 
           <div className="mt-5 flex items-baseline gap-3">
-            <div className="text-3xl font-bold text-amber-700">{formatVnd(productPrice(product))}</div>
-            {hasSale && <div className="text-base text-stone-400 line-through">{formatVnd(productOriginalPrice(product))}</div>}
+            <div className="text-3xl font-bold text-amber-700">{formatVnd(productPrice(product, selectedVariant))}</div>
+            {hasSale && <div className="text-base text-stone-400 line-through">{formatVnd(productOriginalPrice(product, selectedVariant))}</div>}
             {hasSale && (
               <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-red-600">
-                -{Math.round((1 - productPrice(product) / productOriginalPrice(product)) * 100)}%
+                -{Math.round((1 - productPrice(product, selectedVariant) / productOriginalPrice(product, selectedVariant)) * 100)}%
               </span>
             )}
           </div>
@@ -136,10 +146,32 @@ export default function ProductDetail() {
             <p className="mt-4 text-sm leading-relaxed text-stone-600">{product.short_description}</p>
           )}
 
+          {product.variants.length > 1 && (
+            <div className="mt-5">
+              <div className="mb-2 text-sm font-medium text-stone-900">Phiên bản</div>
+              <div className="flex flex-wrap gap-2">
+                {product.variants.map((variant) => (
+                  <button
+                    key={variant.id}
+                    type="button"
+                    onClick={() => { setSelectedVariantId(variant.id); setQty(1); }}
+                    className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      selectedVariant?.id === variant.id
+                        ? "border-stone-900 bg-stone-900 text-white"
+                        : "border-stone-300 bg-white text-stone-700 hover:border-stone-500"
+                    }`}
+                  >
+                    {variant.name ?? [variant.concentration, variant.volume_ml ? `${variant.volume_ml}ml` : null].filter(Boolean).join(" ")}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <dl className="mt-5 grid grid-cols-2 gap-3 rounded-xl bg-stone-50 p-4 text-sm">
-            <Meta label="Dung tích" value={product.volume_ml ? `${product.volume_ml}ml` : "-"} />
+            <Meta label="Dung tích" value={selectedVariant?.volume_ml ? `${selectedVariant.volume_ml}ml` : "-"} />
             <Meta label="Giới tính" value={PRODUCT_GENDER_LABELS[product.gender]} />
-            <Meta label="Nồng độ" value={product.concentration ?? "-"} />
+            <Meta label="Nồng độ" value={selectedVariant?.concentration ?? "-"} />
             <Meta label="Danh mục" value={product.category?.name ?? "-"} />
           </dl>
 
@@ -150,8 +182,8 @@ export default function ProductDetail() {
               </button>
               <span className="w-10 text-center font-semibold">{qty}</span>
               <button
-                onClick={() => setQty(Math.min(product.stock, qty + 1))}
-                disabled={!inStock || qty >= product.stock}
+                onClick={() => setQty(Math.min(selectedVariant?.stock ?? 1, qty + 1))}
+                disabled={!inStock || qty >= (selectedVariant?.stock ?? 0)}
                 className="grid h-10 w-10 place-items-center rounded-full hover:bg-stone-100 disabled:opacity-40"
                 aria-label="Tăng"
               >
@@ -212,10 +244,10 @@ export default function ProductDetail() {
             <dl className="grid gap-3 sm:grid-cols-2">
               <Meta label="Thương hiệu" value={product.brand?.name ?? "-"} />
               <Meta label="Danh mục" value={product.category?.name ?? "-"} />
-              <Meta label="Nồng độ" value={product.concentration ?? "-"} />
-              <Meta label="Dung tích" value={product.volume_ml ? `${product.volume_ml}ml` : "-"} />
+              <Meta label="Nồng độ" value={selectedVariant?.concentration ?? "-"} />
+              <Meta label="Dung tích" value={selectedVariant?.volume_ml ? `${selectedVariant.volume_ml}ml` : "-"} />
               <Meta label="Giới tính" value={PRODUCT_GENDER_LABELS[product.gender]} />
-              <Meta label="Tồn kho" value={`${product.stock}`} />
+              <Meta label="Tồn kho" value={`${selectedVariant?.stock ?? 0}`} />
             </dl>
           )}
         </div>

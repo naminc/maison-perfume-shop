@@ -71,6 +71,68 @@ class OrderWorkflowTest extends TestCase
         $this->assertSame(1, $product->fresh()->stock);
     }
 
+    public function test_order_rejects_variant_that_does_not_belong_to_product(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->createProduct();
+        $otherProduct = $this->createProduct();
+        $payload = $this->orderPayload($product, 1);
+        $payload['items'][0]['product_variant_id'] = $otherProduct->defaultVariant->id;
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/orders', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['items']);
+    }
+
+    public function test_order_tracks_price_stock_and_movements_for_each_variant_independently(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->createProduct(['stock' => 5, 'price' => 900000]);
+        $secondVariant = $product->variants()->create([
+            'sku' => 'ORDER-100-'.Str::upper(Str::random(5)),
+            'name' => 'EDP 100ml',
+            'concentration' => 'EDP',
+            'volume_ml' => 100,
+            'price' => 1600000,
+            'sale_price' => 1500000,
+            'stock' => 7,
+            'status' => 'active',
+            'sort_order' => 2,
+        ]);
+        $payload = $this->orderPayload($product, 1);
+        $payload['items'][] = [
+            'product_id' => $product->id,
+            'product_variant_id' => $secondVariant->id,
+            'quantity' => 2,
+        ];
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/orders', $payload)->assertCreated();
+        $orderId = $response->json('data.id');
+
+        $this->assertSame(4, $product->defaultVariant->fresh()->stock);
+        $this->assertSame(5, $secondVariant->fresh()->stock);
+        $this->assertDatabaseHas('order_items', [
+            'order_id' => $orderId,
+            'product_variant_id' => $secondVariant->id,
+            'variant_name' => 'EDP 100ml',
+            'product_sku' => $secondVariant->sku,
+            'unit_price' => 1500000,
+            'quantity' => 2,
+        ]);
+        $this->assertDatabaseHas('stock_movements', [
+            'order_id' => $orderId,
+            'product_variant_id' => $product->defaultVariant->id,
+            'quantity' => -1,
+        ]);
+        $this->assertDatabaseHas('stock_movements', [
+            'order_id' => $orderId,
+            'product_variant_id' => $secondVariant->id,
+            'quantity' => -2,
+        ]);
+    }
+
     public function test_admin_cancel_order_restores_stock_once(): void
     {
         $user = User::factory()->create();
@@ -298,7 +360,7 @@ class OrderWorkflowTest extends TestCase
             'payment_method' => PaymentMethod::Cod->value,
             'shipping_method' => 'standard',
             'items' => [
-                ['product_id' => $product->id, 'quantity' => $quantity],
+                ['product_id' => $product->id, 'product_variant_id' => $product->defaultVariant->id, 'quantity' => $quantity],
             ],
         ], $overrides);
     }
@@ -307,7 +369,7 @@ class OrderWorkflowTest extends TestCase
     {
         $name = $overrides['name'] ?? 'Test Perfume ' . Str::random(8);
 
-        return Product::query()->create(array_merge([
+        $attributes = array_merge([
             'name' => $name,
             'slug' => Str::slug($name) . '-' . Str::lower(Str::random(6)),
             'sku' => 'TEST-' . Str::upper(Str::random(8)),
@@ -320,7 +382,12 @@ class OrderWorkflowTest extends TestCase
             'status' => ProductStatus::Active->value,
             'is_featured' => false,
             'sort_order' => 1,
-        ], $overrides));
+        ], $overrides);
+        $variant = collect($attributes)->only(['sku', 'concentration', 'volume_ml', 'price', 'sale_price', 'stock'])->all();
+        $product = Product::query()->create(collect($attributes)->except(array_keys($variant))->all());
+        $product->variants()->create([...$variant, 'status' => 'active', 'is_default' => true, 'sort_order' => 1]);
+
+        return $product->fresh(['variants', 'defaultVariant']);
     }
 
     private function ensureGeo(): array

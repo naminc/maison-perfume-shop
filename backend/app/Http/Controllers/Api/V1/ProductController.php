@@ -14,7 +14,7 @@ class ProductController extends BaseController
     public function index(Request $request)
     {
         $result = $this->productService->getActiveList(
-            $request->only(['search', 'gender', 'brand_id', 'category_id', 'is_featured', 'page', 'per_page'])
+            $request->only(['search', 'gender', 'brand_id', 'category_id', 'is_featured', 'in_stock', 'sort', 'page', 'per_page'])
         );
 
         if (! $result['ok']) {

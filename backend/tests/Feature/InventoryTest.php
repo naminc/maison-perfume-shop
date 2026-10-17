@@ -30,7 +30,7 @@ class InventoryTest extends TestCase
         $product = $this->createProduct(['stock' => 5]);
         Sanctum::actingAs($admin);
 
-        $this->postJson("/api/v1/admin/products/{$product->id}/stock-adjustments", [
+        $this->postJson('/api/v1/admin/product-variants/'.$product->defaultVariant->id.'/stock-adjustments', [
             'type' => StockMovementType::Import->value,
             'quantity' => 7,
             'reference' => 'PN-001',
@@ -56,14 +56,14 @@ class InventoryTest extends TestCase
         $product = $this->createProduct(['stock' => 5]);
         Sanctum::actingAs($admin);
 
-        $this->postJson("/api/v1/admin/products/{$product->id}/stock-adjustments", [
+        $this->postJson('/api/v1/admin/product-variants/'.$product->defaultVariant->id.'/stock-adjustments', [
             'type' => StockMovementType::Export->value,
             'quantity' => 3,
         ])->assertCreated()
             ->assertJsonPath('data.quantity', -3)
             ->assertJsonPath('data.stock_after', 2);
 
-        $this->postJson("/api/v1/admin/products/{$product->id}/stock-adjustments", [
+        $this->postJson('/api/v1/admin/product-variants/'.$product->defaultVariant->id.'/stock-adjustments', [
             'type' => StockMovementType::Export->value,
             'quantity' => 3,
         ])->assertStatus(422)
@@ -79,12 +79,12 @@ class InventoryTest extends TestCase
         $product = $this->createProduct(['stock' => 8]);
         Sanctum::actingAs($admin);
 
-        $this->postJson("/api/v1/admin/products/{$product->id}/stock-adjustments", [
+        $this->postJson('/api/v1/admin/product-variants/'.$product->defaultVariant->id.'/stock-adjustments', [
             'type' => StockMovementType::Adjustment->value,
             'quantity' => -2,
         ])->assertStatus(422)->assertJsonValidationErrors(['note']);
 
-        $this->postJson("/api/v1/admin/products/{$product->id}/stock-adjustments", [
+        $this->postJson('/api/v1/admin/product-variants/'.$product->defaultVariant->id.'/stock-adjustments', [
             'type' => StockMovementType::Adjustment->value,
             'quantity' => -2,
             'note' => 'Kiểm kê thực tế.',
@@ -112,17 +112,19 @@ class InventoryTest extends TestCase
         $this->putJson("/api/v1/admin/products/{$product->id}", [
             'name' => $product->name,
             'slug' => $product->slug,
-            'sku' => $product->sku,
             'gender' => $product->gender->value,
-            'concentration' => $product->concentration,
-            'volume_ml' => $product->volume_ml,
-            'price' => $product->price,
-            'sale_price' => $product->sale_price,
-            'stock' => 99,
             'status' => $product->status->value,
             'is_featured' => $product->is_featured,
             'sort_order' => $product->sort_order,
-        ])->assertStatus(422)->assertJsonValidationErrors(['stock']);
+            'variants' => [[
+                'id' => $product->defaultVariant->id,
+                'sku' => $product->defaultVariant->sku,
+                'price' => $product->defaultVariant->price,
+                'stock' => 99,
+                'status' => 'active',
+                'is_default' => true,
+            ]],
+        ])->assertStatus(422)->assertJsonValidationErrors(['variants.0.stock']);
 
         $this->assertSame(5, $product->fresh()->stock);
         $this->assertDatabaseCount('stock_movements', 0);
@@ -181,7 +183,7 @@ class InventoryTest extends TestCase
         Sanctum::actingAs($user);
 
         $payload = $this->orderPayload($available, 1);
-        $payload['items'][] = ['product_id' => $unavailable->id, 'quantity' => 1];
+        $payload['items'][] = ['product_id' => $unavailable->id, 'product_variant_id' => $unavailable->defaultVariant->id, 'quantity' => 1];
 
         $this->postJson('/api/v1/orders', $payload)
             ->assertStatus(422)
@@ -196,7 +198,7 @@ class InventoryTest extends TestCase
     {
         $name = $overrides['name'] ?? 'Inventory Perfume '.Str::random(8);
 
-        return Product::query()->create(array_merge([
+        $attributes = array_merge([
             'name' => $name,
             'slug' => Str::slug($name).'-'.Str::lower(Str::random(6)),
             'sku' => 'INV-'.Str::upper(Str::random(8)),
@@ -209,7 +211,12 @@ class InventoryTest extends TestCase
             'status' => ProductStatus::Active->value,
             'is_featured' => false,
             'sort_order' => 1,
-        ], $overrides));
+        ], $overrides);
+        $variant = collect($attributes)->only(['sku', 'concentration', 'volume_ml', 'price', 'sale_price', 'stock'])->all();
+        $product = Product::query()->create(collect($attributes)->except(array_keys($variant))->all());
+        $product->variants()->create([...$variant, 'status' => 'active', 'is_default' => true, 'sort_order' => 1]);
+
+        return $product->fresh(['variants', 'defaultVariant']);
     }
 
     private function orderPayload(Product $product, int $quantity): array
@@ -227,7 +234,7 @@ class InventoryTest extends TestCase
             'shipping_address' => 'So 3, Duong so 30',
             'payment_method' => PaymentMethod::Cod->value,
             'shipping_method' => 'standard',
-            'items' => [['product_id' => $product->id, 'quantity' => $quantity]],
+            'items' => [['product_id' => $product->id, 'product_variant_id' => $product->defaultVariant->id, 'quantity' => $quantity]],
         ];
     }
 

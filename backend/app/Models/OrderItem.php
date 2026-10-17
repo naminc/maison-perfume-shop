@@ -14,9 +14,11 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'product_id',
+        'product_variant_id',
         'product_name',
         'product_slug',
         'product_sku',
+        'variant_name',
         'product_image',
         'brand_name',
         'category_name',
@@ -31,6 +33,7 @@ class OrderItem extends Model
     protected $casts = [
         'order_id'       => 'integer',
         'product_id'     => 'integer',
+        'product_variant_id' => 'integer',
         'volume_ml'      => 'integer',
         'unit_price'     => 'decimal:2',
         'original_price' => 'decimal:2',
@@ -46,6 +49,11 @@ class OrderItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class)->withTrashed();
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id')->withTrashed();
     }
 
     public function review(): HasOne

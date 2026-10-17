@@ -21,6 +21,7 @@ class ValidateCouponRequest extends FormRequest
             'shipping_method'    => ['required', 'string', Rule::in(['standard', 'express'])],
             'items'              => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->whereNull('deleted_at')],
+            'items.*.product_variant_id' => ['required', 'integer', Rule::exists('product_variants', 'id')->whereNull('deleted_at')],
             'items.*.quantity'   => ['required', 'integer', 'min:1'],
         ];
     }

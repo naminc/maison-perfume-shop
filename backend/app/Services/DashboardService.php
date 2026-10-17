@@ -9,6 +9,7 @@ use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\ProductReview;
 use App\Models\User;
 use App\Services\Interfaces\DashboardServiceInterface;
@@ -193,19 +194,23 @@ class DashboardService extends BaseService implements DashboardServiceInterface
 
     private function lowStockProducts(): array
     {
-        return Product::query()
-            ->where('status', ProductStatus::Active->value)
+        return ProductVariant::query()
+            ->with('product:id,name,slug,image,status')
+            ->whereHas('product', fn ($query) => $query->where('status', ProductStatus::Active->value))
             ->where('stock', '<=', self::LOW_STOCK_THRESHOLD)
             ->orderBy('stock')
             ->limit(self::LOW_STOCK_LIMIT)
             ->get()
-            ->map(fn (Product $product) => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'slug' => $product->slug,
-                'sku' => $product->sku,
-                'image' => $product->image,
-                'stock' => (int) $product->stock,
+            ->map(fn (ProductVariant $variant) => [
+                'id' => $variant->id,
+                'product_id' => $variant->product_id,
+                'variant_id' => $variant->id,
+                'name' => $variant->product?->name,
+                'variant_name' => $variant->name,
+                'slug' => $variant->product?->slug,
+                'sku' => $variant->sku,
+                'image' => $variant->product?->image,
+                'stock' => (int) $variant->stock,
             ])
             ->all();
     }

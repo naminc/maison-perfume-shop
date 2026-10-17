@@ -1,18 +1,28 @@
-import type { Product } from "@/types/product";
+import type { Product, ProductVariant } from "@/types/product";
 
 export const FREE_SHIPPING_THRESHOLD = 500000;
 export const STANDARD_SHIPPING_FEE = 30000;
 
-export function productPrice(product: Product) {
-  return Number(product.sale_price ?? product.price);
+export function defaultProductVariant(product: Product): ProductVariant | null {
+  return product.default_variant
+    ?? product.variants.find((variant) => variant.is_default)
+    ?? product.variants[0]
+    ?? null;
 }
 
-export function productOriginalPrice(product: Product) {
-  return Number(product.price);
+export function productPrice(product: Product, variant?: ProductVariant | null) {
+  const selected = variant ?? defaultProductVariant(product);
+  return selected ? Number(selected.sale_price ?? selected.price) : Number(product.min_price ?? 0);
 }
 
-export function hasProductSale(product: Product) {
-  return product.sale_price !== null && productPrice(product) < productOriginalPrice(product);
+export function productOriginalPrice(product: Product, variant?: ProductVariant | null) {
+  const selected = variant ?? defaultProductVariant(product);
+  return selected ? Number(selected.price) : Number(product.min_price ?? 0);
+}
+
+export function hasProductSale(product: Product, variant?: ProductVariant | null) {
+  const selected = variant ?? defaultProductVariant(product);
+  return Boolean(selected?.sale_price) && productPrice(product, selected) < productOriginalPrice(product, selected);
 }
 
 export function formatVnd(value: string | number | null | undefined) {

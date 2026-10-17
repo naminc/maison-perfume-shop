@@ -6,15 +6,12 @@ import ProductCard from "@/components/site/ProductCard";
 import { useBrands } from "@/hooks/useBrands";
 import { useCategories } from "@/hooks/useCategories";
 import { useProducts } from "@/hooks/useProducts";
-import { productPrice } from "@/lib/product-utils";
 import type { Category } from "@/types/category";
-import type { Product } from "@/types/product";
-
-type SortKey = "popular" | "price-asc" | "price-desc" | "newest";
+import type { ProductSort } from "@/types/product";
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [sort, setSort] = useState<SortKey>("popular");
+  const [sort, setSort] = useState<ProductSort>("popular");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const brandsQuery = useBrands();
@@ -29,10 +26,11 @@ export default function Shop() {
   const productsQuery = useProducts({
     brand_id: selectedBrandId,
     category_id: selectedCategoryId,
+    sort,
     per_page: 100,
   });
 
-  const products = useMemo(() => sortProducts(productsQuery.data?.data ?? [], sort), [productsQuery.data?.data, sort]);
+  const products = productsQuery.data?.data ?? [];
   const isLoading = productsQuery.isLoading || brandsQuery.isLoading || categoriesQuery.isLoading;
   const isError = productsQuery.isError || brandsQuery.isError || categoriesQuery.isError;
 
@@ -102,7 +100,7 @@ export default function Shop() {
             </div>
             <select
               value={sort}
-              onChange={(event) => setSort(event.target.value as SortKey)}
+              onChange={(event) => setSort(event.target.value as ProductSort)}
               className="ml-auto rounded-lg border border-input bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="popular">Phổ biến</option>
@@ -201,19 +199,4 @@ function flattenCategories(categories: Category[]): Category[] {
     category,
     ...flattenCategories(category.children ?? []),
   ]);
-}
-
-function sortProducts(products: Product[], sort: SortKey) {
-  const list = [...products];
-
-  switch (sort) {
-    case "price-asc":
-      return list.sort((a, b) => productPrice(a) - productPrice(b));
-    case "price-desc":
-      return list.sort((a, b) => productPrice(b) - productPrice(a));
-    case "newest":
-      return list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
-    default:
-      return list.sort((a, b) => Number(b.is_featured) - Number(a.is_featured) || a.sort_order - b.sort_order);
-  }
 }

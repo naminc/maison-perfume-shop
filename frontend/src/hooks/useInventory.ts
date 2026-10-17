@@ -24,8 +24,8 @@ export function useAdjustProductStock() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ productId, payload }: { productId: number; payload: StockAdjustmentPayload }) =>
-      adminInventoryApi.adjustStock(productId, payload),
+    mutationFn: ({ variantId, payload }: { variantId: number; payload: StockAdjustmentPayload }) =>
+      adminInventoryApi.adjustStock(variantId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.admin.inventory.all });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.admin.products.all });

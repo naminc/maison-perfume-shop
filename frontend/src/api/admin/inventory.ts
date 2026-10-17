@@ -2,6 +2,7 @@ import { api } from "@/lib/api";
 import { unwrap } from "@/lib/unwrap";
 import type {
   ProductStockMovementsResponse,
+  VariantStockMovementsResponse,
   StockAdjustmentPayload,
   StockMovement,
   StockMovementListParams,
@@ -25,6 +26,9 @@ export const adminInventoryApi = {
   getProductMovements: (productId: number, params: StockMovementListParams = {}) =>
     api.get<{ data: ProductStockMovementsResponse }>(`/v1/admin/products/${productId}/stock-movements`, { params: normalizeParams(params) }).then(unwrap),
 
-  adjustStock: (productId: number, payload: StockAdjustmentPayload) =>
-    api.post<{ data: StockMovement }>(`/v1/admin/products/${productId}/stock-adjustments`, payload).then(unwrap),
+  getVariantMovements: (variantId: number, params: StockMovementListParams = {}) =>
+    api.get<{ data: VariantStockMovementsResponse }>(`/v1/admin/product-variants/${variantId}/stock-movements`, { params: normalizeParams(params) }).then(unwrap),
+
+  adjustStock: (variantId: number, payload: StockAdjustmentPayload) =>
+    api.post<{ data: StockMovement }>(`/v1/admin/product-variants/${variantId}/stock-adjustments`, payload).then(unwrap),
 };

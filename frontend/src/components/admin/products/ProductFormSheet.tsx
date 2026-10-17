@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { Plus, Trash2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { AxiosError } from "axios";
 import { toast } from "sonner";
@@ -64,11 +64,13 @@ export function ProductFormSheet({
     handleSubmit,
     reset,
     setError,
+    setValue,
     formState: { errors },
   } = useForm<ProductFormInput, unknown, ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: getDefaultValues(product),
   });
+  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({ control, name: "variants" });
 
   useEffect(() => {
     if (open) {
@@ -77,7 +79,7 @@ export function ProductFormSheet({
   }, [product, open, reset]);
 
   const onSubmit = (values: ProductFormValues) => {
-    const payload = toPayload(values, isEditMode);
+    const payload = toPayload(values);
 
     const handlers = {
       onSuccess: () => {
@@ -119,9 +121,6 @@ export function ProductFormSheet({
               </Field>
               <Field error={errors.slug?.message} label="Slug" htmlFor="slug">
                 <Input id="slug" className="h-9" placeholder="maison-rose-edp" {...register("slug")} />
-              </Field>
-              <Field error={errors.sku?.message} label="SKU" htmlFor="sku">
-                <Input id="sku" className="h-9" placeholder="MSR-EDP-50" {...register("sku")} />
               </Field>
               <Field error={errors.image?.message} label="Ảnh URL" htmlFor="image">
                 <Input id="image" className="h-9" placeholder="https://example.com/product.jpg" {...register("image")} />
@@ -219,45 +218,81 @@ export function ProductFormSheet({
                 />
               </Field>
 
-              <Field error={errors.concentration?.message} label="Nồng độ" htmlFor="concentration">
-                <Input id="concentration" className="h-9" placeholder="EDP, EDT, Parfum..." {...register("concentration")} />
-              </Field>
-
-              <Field error={errors.volume_ml?.message} label="Dung tích (ml)" htmlFor="volume_ml">
-                <Input id="volume_ml" type="number" min={1} className="h-9" placeholder="50" {...register("volume_ml")} />
-              </Field>
             </div>
           </fieldset>
 
           <fieldset className="space-y-3">
-            <legend className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Giá và tồn kho</legend>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Field error={errors.price?.message} label="Giá bán *" htmlFor="price">
-                <Input id="price" type="number" min={0} step="1000" className="h-9" placeholder="1850000" {...register("price")} />
-              </Field>
-              <Field error={errors.sale_price?.message} label="Giá khuyến mãi" htmlFor="sale_price">
-                <Input id="sale_price" type="number" min={0} step="1000" className="h-9" placeholder="Tuỳ chọn" {...register("sale_price")} />
-              </Field>
-              <Field error={errors.stock?.message} label="Tồn kho *" htmlFor="stock">
-                <Input
-                  id="stock"
-                  type="number"
-                  min={0}
-                  readOnly={isEditMode}
-                  className={cn("h-9", isEditMode && "cursor-not-allowed bg-muted")}
-                  placeholder="0"
-                  {...register("stock")}
-                />
-                {isEditMode ? (
-                  <p className="text-xs text-muted-foreground">
-                    Tồn kho được cập nhật tại{" "}
-                    <Link className="font-medium text-primary hover:underline" to="/admin/inventory">
-                      Quản lý kho
-                    </Link>
-                    .
-                  </p>
-                ) : null}
-              </Field>
+            <div className="flex items-center justify-between">
+              <legend className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Phiên bản sản phẩm</legend>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => appendVariant(emptyVariant(variantFields.length + 1))}
+              >
+                <Plus className="h-4 w-4" /> Thêm phiên bản
+              </Button>
+            </div>
+            {errors.variants?.message && <p className="text-xs text-destructive">{errors.variants.message}</p>}
+            <div className="space-y-3">
+              {variantFields.map((variant, index) => {
+                const variantErrors = errors.variants?.[index];
+                const existing = Boolean(product?.variants[index]?.id);
+
+                return (
+                  <div key={variant.id} className="space-y-3 rounded-md border p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Phiên bản {index + 1}</span>
+                      {variantFields.length > 1 && (
+                        <Button type="button" size="icon" variant="ghost" onClick={() => removeVariant(index)} aria-label="Xoá phiên bản">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field error={variantErrors?.sku?.message} label="SKU *" htmlFor={`variants.${index}.sku`}>
+                        <Input id={`variants.${index}.sku`} {...register(`variants.${index}.sku`)} />
+                      </Field>
+                      <Field error={variantErrors?.name?.message} label="Tên phiên bản" htmlFor={`variants.${index}.name`}>
+                        <Input id={`variants.${index}.name`} placeholder="50ml" {...register(`variants.${index}.name`)} />
+                      </Field>
+                      <Field error={variantErrors?.concentration?.message} label="Nồng độ" htmlFor={`variants.${index}.concentration`}>
+                        <Input id={`variants.${index}.concentration`} placeholder="EDP" {...register(`variants.${index}.concentration`)} />
+                      </Field>
+                      <Field error={variantErrors?.volume_ml?.message} label="Dung tích (ml)" htmlFor={`variants.${index}.volume_ml`}>
+                        <Input id={`variants.${index}.volume_ml`} type="number" min={1} {...register(`variants.${index}.volume_ml`)} />
+                      </Field>
+                      <Field error={variantErrors?.price?.message} label="Giá bán *" htmlFor={`variants.${index}.price`}>
+                        <Input id={`variants.${index}.price`} type="number" min={0} step={1000} {...register(`variants.${index}.price`)} />
+                      </Field>
+                      <Field error={variantErrors?.sale_price?.message} label="Giá khuyến mãi" htmlFor={`variants.${index}.sale_price`}>
+                        <Input id={`variants.${index}.sale_price`} type="number" min={0} step={1000} {...register(`variants.${index}.sale_price`)} />
+                      </Field>
+                      <Field error={variantErrors?.stock?.message} label="Tồn kho" htmlFor={`variants.${index}.stock`}>
+                        <Input id={`variants.${index}.stock`} type="number" min={0} readOnly={existing} className={cn(existing && "cursor-not-allowed bg-muted")} {...register(`variants.${index}.stock`)} />
+                      </Field>
+                      <Field error={variantErrors?.status?.message} label="Trạng thái" htmlFor={`variants.${index}.status`}>
+                        <Controller control={control} name={`variants.${index}.status`} render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id={`variants.${index}.status`}><SelectValue /></SelectTrigger>
+                            <SelectContent>{PRODUCT_STATUS_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                          </Select>
+                        )} />
+                      </Field>
+                    </div>
+                    <Controller control={control} name={`variants.${index}.is_default`} render={({ field }) => (
+                      <label className="flex items-center gap-2 text-sm">
+                        <Checkbox checked={field.value === true} onCheckedChange={(checked) => {
+                          if (checked === true) variantFields.forEach((_, itemIndex) => setValue(`variants.${itemIndex}.is_default`, itemIndex === index));
+                          else field.onChange(false);
+                        }} />
+                        Phiên bản mặc định
+                      </label>
+                    )} />
+                    {existing && <p className="text-xs text-muted-foreground">Tồn kho của phiên bản hiện có được cập nhật tại Quản lý kho.</p>}
+                  </div>
+                );
+              })}
             </div>
           </fieldset>
 
@@ -356,41 +391,70 @@ function getDefaultValues(product?: Product | null): ProductFormInput {
     category_id: product?.category_id ?? undefined,
     name: product?.name ?? "",
     slug: product?.slug ?? "",
-    sku: product?.sku ?? "",
     short_description: product?.short_description ?? "",
     description: product?.description ?? "",
     image: product?.image ?? "",
     gender: product?.gender ?? "unisex",
-    concentration: product?.concentration ?? "",
-    volume_ml: product?.volume_ml ?? "",
-    price: product?.price ?? "",
-    sale_price: product?.sale_price ?? "",
-    stock: product?.stock ?? 0,
     status: product?.status ?? "active",
     is_featured: product?.is_featured ?? false,
     sort_order: product?.sort_order ?? "",
+    variants: product?.variants.map((variant) => ({
+      id: variant.id,
+      sku: variant.sku,
+      name: variant.name ?? "",
+      concentration: variant.concentration ?? "",
+      volume_ml: variant.volume_ml ?? "",
+      price: Number(variant.price),
+      sale_price: variant.sale_price ?? "",
+      stock: variant.stock,
+      status: variant.status,
+      is_default: variant.is_default,
+      sort_order: variant.sort_order,
+    })) ?? [emptyVariant(1)],
   };
 }
 
-function toPayload(values: ProductFormValues, isEditMode: boolean): ProductPayload {
+function toPayload(values: ProductFormValues): ProductPayload {
   return {
     brand_id: values.brand_id ?? null,
     category_id: values.category_id ?? null,
     name: values.name.trim(),
     slug: normalizeOptionalString(values.slug),
-    sku: normalizeOptionalString(values.sku),
     short_description: normalizeOptionalString(values.short_description),
     description: normalizeOptionalString(values.description),
     image: normalizeOptionalString(values.image),
     gender: values.gender,
-    concentration: normalizeOptionalString(values.concentration),
-    volume_ml: values.volume_ml ?? null,
-    price: values.price,
-    sale_price: values.sale_price ?? null,
-    ...(!isEditMode ? { stock: values.stock } : {}),
     status: values.status,
     is_featured: values.is_featured ?? false,
     sort_order: values.sort_order,
+    variants: values.variants.map((variant, index) => ({
+      ...(variant.id ? { id: variant.id } : {}),
+      sku: variant.sku.trim(),
+      name: normalizeOptionalString(variant.name),
+      concentration: normalizeOptionalString(variant.concentration),
+      volume_ml: variant.volume_ml ?? null,
+      price: variant.price,
+      sale_price: variant.sale_price ?? null,
+      ...(!variant.id ? { stock: variant.stock ?? 0 } : {}),
+      status: variant.status,
+      is_default: variant.is_default ?? index === 0,
+      sort_order: variant.sort_order ?? index + 1,
+    })),
+  };
+}
+
+function emptyVariant(sortOrder: number): ProductFormInput["variants"][number] {
+  return {
+    sku: "",
+    name: "",
+    concentration: "",
+    volume_ml: "",
+    price: 0,
+    sale_price: "",
+    stock: 0,
+    status: "active",
+    is_default: sortOrder === 1,
+    sort_order: sortOrder,
   };
 }
 

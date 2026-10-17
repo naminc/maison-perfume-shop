@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Heart, Package, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useStorefront } from "@/hooks/useStorefront";
-import { formatVnd, hasProductSale, productOriginalPrice, productPrice } from "@/lib/product-utils";
+import { defaultProductVariant, formatVnd, hasProductSale, productOriginalPrice, productPrice } from "@/lib/product-utils";
 import type { Product } from "@/types/product";
 
 interface Props {
@@ -13,14 +13,24 @@ interface Props {
 
 export default function ProductCard({ product, onToggleWishlist, inWishlist }: Props) {
   const { addToCart, toggleWishlist, isInWishlist } = useStorefront();
+  const navigate = useNavigate();
   const liked = inWishlist ?? isInWishlist(product.id);
-  const inStock = product.stock > 0;
-  const hasSale = hasProductSale(product);
+  const activeVariants = product.variants.filter((item) => item.status === "active");
+  const variant = defaultProductVariant(product);
+  const inStock = activeVariants.some((item) => item.stock > 0);
+  const hasSale = hasProductSale(product, variant);
+  const effectivePrices = activeVariants.map((item) => Number(item.sale_price ?? item.price));
+  const hasPriceRange = effectivePrices.length > 1 && Math.min(...effectivePrices) !== Math.max(...effectivePrices);
 
   const handleAddToCart = () => {
     if (!inStock) return;
 
-    addToCart(product.id, 1, product.stock);
+    if (activeVariants.length !== 1) {
+      navigate(`/product/${product.slug}`);
+      return;
+    }
+
+    addToCart(product.id, activeVariants[0].id, 1, activeVariants[0].stock);
     toast.success(`Đã thêm ${product.name} vào giỏ hàng`);
   };
 
@@ -58,7 +68,7 @@ export default function ProductCard({ product, onToggleWishlist, inWishlist }: P
 
         {hasSale && (
           <span className="absolute right-2 top-2 rounded-full bg-rose-600/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm">
-            -{Math.round((1 - productPrice(product) / productOriginalPrice(product)) * 100)}%
+            -{Math.round((1 - productPrice(product, variant) / productOriginalPrice(product, variant)) * 100)}%
           </span>
         )}
 
@@ -79,15 +89,17 @@ export default function ProductCard({ product, onToggleWishlist, inWishlist }: P
           </Link>
         </h3>
         <div className="mt-1 flex items-center gap-2 text-xs text-stone-500">
-          {product.concentration && <span>{product.concentration}</span>}
-          {product.volume_ml && <span>{product.volume_ml}ml</span>}
+          {variant?.concentration && <span>{variant.concentration}</span>}
+          {variant?.volume_ml && <span>{variant.volume_ml}ml</span>}
           {product.category?.name && <span className="truncate">{product.category.name}</span>}
         </div>
         <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-base font-bold text-amber-700">{formatVnd(productPrice(product))}</span>
+          <span className="text-base font-bold text-amber-700">
+            {hasPriceRange ? `Từ ${formatVnd(product.min_price)}` : formatVnd(productPrice(product, variant))}
+          </span>
           {hasSale && (
             <span className="text-xs text-stone-400 line-through">
-              {formatVnd(productOriginalPrice(product))}
+              {formatVnd(productOriginalPrice(product, variant))}
             </span>
           )}
         </div>
@@ -101,7 +113,7 @@ export default function ProductCard({ product, onToggleWishlist, inWishlist }: P
             {inStock ? (
               <>
                 <ShoppingCart className="h-3.5 w-3.5" />
-                Thêm vào giỏ
+                {activeVariants.length === 1 ? "Thêm vào giỏ" : "Chọn phiên bản"}
               </>
             ) : (
               "Hết hàng"

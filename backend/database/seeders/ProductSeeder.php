@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\ProductGender;
 use App\Enums\ProductStatus;
+use App\Enums\ProductVariantStatus;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
@@ -202,10 +203,22 @@ class ProductSeeder extends Seeder
         foreach ($products as $product) {
             $brandId = $brands[$product['brand_slug']] ?? null;
             $categoryId = $categories[$product['category_slug']] ?? null;
+            $variant = collect($product)->only([
+                'sku', 'concentration', 'volume_ml', 'price', 'sale_price', 'stock',
+            ])->all();
 
-            unset($product['brand_slug'], $product['category_slug']);
+            unset(
+                $product['brand_slug'],
+                $product['category_slug'],
+                $product['sku'],
+                $product['concentration'],
+                $product['volume_ml'],
+                $product['price'],
+                $product['sale_price'],
+                $product['stock'],
+            );
 
-            Product::updateOrCreate(
+            $createdProduct = Product::updateOrCreate(
                 ['slug' => $product['slug']],
                 [
                     ...$product,
@@ -214,6 +227,36 @@ class ProductSeeder extends Seeder
                     'status' => ProductStatus::Active->value,
                 ],
             );
+
+            $createdProduct->variants()->updateOrCreate(
+                ['sku' => $variant['sku']],
+                [
+                    ...$variant,
+                    'name' => $variant['volume_ml'].'ml',
+                    'status' => ProductVariantStatus::Active->value,
+                    'is_default' => true,
+                    'sort_order' => 1,
+                ],
+            );
+
+            if (($variant['volume_ml'] ?? 0) >= 90 && $variant['concentration'] !== 'Body Mist') {
+                $smallVolume = 50;
+                $smallSku = preg_replace('/-\d+$/', '-'.$smallVolume, $variant['sku']);
+                $createdProduct->variants()->updateOrCreate(
+                    ['sku' => $smallSku],
+                    [
+                        'name' => $smallVolume.'ml',
+                        'concentration' => $variant['concentration'],
+                        'volume_ml' => $smallVolume,
+                        'price' => round($variant['price'] * 0.65, -4),
+                        'sale_price' => $variant['sale_price'] === null ? null : round($variant['sale_price'] * 0.65, -4),
+                        'stock' => max(3, (int) floor($variant['stock'] * 0.75)),
+                        'status' => ProductVariantStatus::Active->value,
+                        'is_default' => false,
+                        'sort_order' => 2,
+                    ],
+                );
+            }
         }
     }
 }
