@@ -78,6 +78,11 @@ class Order extends Model
         return $this->hasMany(ProductReview::class);
     }
 
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
     public function getWardNameAttribute($value): ?string
     {
         $wardName = is_string($value) ? trim($value) : $value;

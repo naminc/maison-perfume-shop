@@ -3,9 +3,17 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { accountWishlistApi } from "@/api/account/wishlist";
+import { QUERY_KEYS } from "@/constants/query-keys";
+import { useAuth } from "@/contexts/AuthContext";
+import { wasApiConnectionNotified } from "@/lib/api";
+import type { Product } from "@/types/product";
 
 export interface CartLine {
   productId: number;
@@ -25,7 +33,7 @@ interface StorefrontContextValue {
   updateCartQuantity: (productId: number, quantity: number, maxStock?: number) => void;
   removeFromCart: (productId: number) => void;
   clearCart: () => void;
-  toggleWishlist: (productId: number) => void;
+  toggleWishlist: (productId: number, product?: Product) => void;
   isInWishlist: (productId: number) => boolean;
 }
 
@@ -83,20 +91,83 @@ function normalizeWishlist(ids: Array<number | string>) {
 }
 
 export function StorefrontProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [cart, setCart] = useState<CartLine[]>(() =>
     normalizeCart(readJson<RawCartLine[]>(CART_KEY, [])),
   );
-  const [wishlistIds, setWishlistIds] = useState<number[]>(() =>
+  const [localWishlistIds, setLocalWishlistIds] = useState<number[]>(() =>
     normalizeWishlist(readJson<Array<number | string>>(WISHLIST_KEY, [])),
   );
+  const mergedForUserRef = useRef<number | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem(CART_KEY, JSON.stringify(cart));
   }, [cart]);
 
   useEffect(() => {
-    window.localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlistIds));
-  }, [wishlistIds]);
+    window.localStorage.setItem(WISHLIST_KEY, JSON.stringify(localWishlistIds));
+  }, [localWishlistIds]);
+
+  const serverWishlistQuery = useQuery({
+    queryKey: QUERY_KEYS.account.wishlist,
+    queryFn: accountWishlistApi.getWishlist,
+    enabled: Boolean(user),
+  });
+
+  const toggleWishlistMutation = useMutation({
+    mutationFn: ({ productId }: { productId: number; product?: Product }) =>
+      accountWishlistApi.toggle(productId),
+    onMutate: async ({ productId, product }) => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.account.wishlist });
+
+      const previous = queryClient.getQueryData<Product[]>(QUERY_KEYS.account.wishlist);
+
+      queryClient.setQueryData<Product[]>(QUERY_KEYS.account.wishlist, (current = []) => {
+        const exists = current.some((item) => item.id === productId);
+
+        if (exists) {
+          return current.filter((item) => item.id !== productId);
+        }
+
+        return product ? [product, ...current] : current;
+      });
+
+      return { previous };
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(QUERY_KEYS.account.wishlist, context.previous);
+      }
+
+      if (!wasApiConnectionNotified(error)) {
+        toast.error("Không thể cập nhật danh sách yêu thích. Vui lòng thử lại.");
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.account.wishlist });
+    },
+  });
+  const { mutate: toggleWishlistServer } = toggleWishlistMutation;
+
+  // Đăng nhập lần đầu: đẩy wishlist localStorage lên server một lần rồi xoá local.
+  useEffect(() => {
+    if (!user || !serverWishlistQuery.data) return;
+    if (mergedForUserRef.current === user.id) return;
+
+    mergedForUserRef.current = user.id;
+
+    const serverIds = new Set(serverWishlistQuery.data.map((item) => item.id));
+    const missing = localWishlistIds.filter((id) => !serverIds.has(id));
+
+    setLocalWishlistIds([]);
+
+    if (missing.length > 0) {
+      void Promise.allSettled(missing.map((id) => accountWishlistApi.toggle(id))).then(() => {
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.account.wishlist });
+      });
+    }
+  }, [localWishlistIds, queryClient, serverWishlistQuery.data, user]);
 
   const addToCart = useCallback((productId: number, quantity = 1, maxStock?: number) => {
     if (!Number.isInteger(productId) || productId <= 0) return;
@@ -144,15 +215,31 @@ export function StorefrontProvider({ children }: { children: ReactNode }) {
     setCart([]);
   }, []);
 
-  const toggleWishlist = useCallback((productId: number) => {
-    if (!Number.isInteger(productId) || productId <= 0) return;
+  const wishlistIds = useMemo(() => {
+    if (user) {
+      return (serverWishlistQuery.data ?? []).map((item) => item.id);
+    }
 
-    setWishlistIds((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId],
-    );
-  }, []);
+    return localWishlistIds;
+  }, [localWishlistIds, serverWishlistQuery.data, user]);
+
+  const toggleWishlist = useCallback(
+    (productId: number, product?: Product) => {
+      if (!Number.isInteger(productId) || productId <= 0) return;
+
+      if (user) {
+        toggleWishlistServer({ productId, product });
+        return;
+      }
+
+      setLocalWishlistIds((prev) =>
+        prev.includes(productId)
+          ? prev.filter((id) => id !== productId)
+          : [...prev, productId],
+      );
+    },
+    [toggleWishlistServer, user],
+  );
 
   const isInWishlist = useCallback(
     (productId: number) => wishlistIds.includes(productId),

@@ -47,6 +47,7 @@ class ProductService extends BaseService implements ProductServiceInterface
             }
 
             $data = $this->preparePayload($data);
+            unset($data['stock']);
             $data['sort_order'] = $this->resolveSortOrder($data['sort_order'], $product->sort_order);
             $data['slug'] = $this->makeUniqueSlug($data['slug'] ?: $data['name'], $product->id);
 

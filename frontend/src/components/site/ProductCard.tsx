@@ -30,7 +30,7 @@ export default function ProductCard({ product, onToggleWishlist, inWishlist }: P
       return;
     }
 
-    toggleWishlist(product.id);
+    toggleWishlist(product.id, product);
     toast.success(liked ? "Đã xoá khỏi danh sách yêu thích" : "Đã thêm vào danh sách yêu thích");
   };
 

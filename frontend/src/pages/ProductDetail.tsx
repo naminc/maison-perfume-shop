@@ -165,7 +165,7 @@ export default function ProductDetail() {
             <button
               type="button"
               onClick={() => {
-                toggleWishlist(product.id);
+                toggleWishlist(product.id, product);
                 toast.success(liked ? "Đã xoá khỏi danh sách yêu thích" : "Đã thêm vào danh sách yêu thích");
               }}
               aria-label={liked ? "Bỏ yêu thích" : "Yêu thích"}

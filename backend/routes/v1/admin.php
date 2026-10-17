@@ -2,8 +2,12 @@
 
 use App\Http\Controllers\Api\V1\Admin\CategoryController;
 use App\Http\Controllers\Api\V1\Admin\BrandController;
+use App\Http\Controllers\Api\V1\Admin\ContactController;
 use App\Http\Controllers\Api\V1\Admin\CouponController;
+use App\Http\Controllers\Api\V1\Admin\DashboardController;
+use App\Http\Controllers\Api\V1\Admin\InventoryController;
 use App\Http\Controllers\Api\V1\Admin\OrderController;
+use App\Http\Controllers\Api\V1\Admin\PostController;
 use App\Http\Controllers\Api\V1\Admin\ProductController;
 use App\Http\Controllers\Api\V1\Admin\ProductReviewController;
 use App\Http\Controllers\Api\V1\Admin\SettingController;
@@ -11,10 +15,16 @@ use App\Http\Controllers\Api\V1\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
+    Route::get('dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
+    Route::get('inventory/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
+    Route::get('products/{product}/stock-movements', [InventoryController::class, 'productMovements'])->name('products.stock-movements');
+    Route::post('products/{product}/stock-adjustments', [InventoryController::class, 'adjust'])->name('products.stock-adjustments');
+    Route::apiResource('contacts', ContactController::class)->only(['index', 'show', 'update', 'destroy']);
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('brands', BrandController::class);
     Route::apiResource('products', ProductController::class);
     Route::apiResource('coupons', CouponController::class);
+    Route::apiResource('posts', PostController::class);
     Route::get('product-reviews', [ProductReviewController::class, 'index'])->name('product-reviews.index');
     Route::get('product-reviews/{productReview}', [ProductReviewController::class, 'show'])->name('product-reviews.show');
     Route::patch('product-reviews/{productReview}/approve', [ProductReviewController::class, 'approve'])->name('product-reviews.approve');

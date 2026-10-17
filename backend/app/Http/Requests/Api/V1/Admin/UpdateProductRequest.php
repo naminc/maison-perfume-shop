@@ -21,29 +21,32 @@ class UpdateProductRequest extends FormRequest
         $productId = (int) $this->route('product');
 
         return [
-            'brand_id'          => ['nullable', 'integer', Rule::exists('brands', 'id')->whereNull('deleted_at')],
-            'category_id'       => ['nullable', 'integer', Rule::exists('categories', 'id')->whereNull('deleted_at')],
-            'name'              => ['required', 'string', 'max:255'],
-            'slug'              => ['nullable', 'string', 'max:255', Rule::unique('products', 'slug')->ignore($productId)],
-            'sku'               => ['nullable', 'string', 'max:100', Rule::unique('products', 'sku')->ignore($productId)],
+            'brand_id' => ['nullable', 'integer', Rule::exists('brands', 'id')->whereNull('deleted_at')],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->whereNull('deleted_at')],
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', Rule::unique('products', 'slug')->ignore($productId)],
+            'sku' => ['nullable', 'string', 'max:100', Rule::unique('products', 'sku')->ignore($productId)],
             'short_description' => ['nullable', 'string', 'max:500'],
-            'description'       => ['nullable', 'string'],
-            'image'             => ['nullable', 'string', 'url', 'max:255'],
-            'gender'            => ['required', 'string', Rule::in(ProductGender::values())],
-            'concentration'     => ['nullable', 'string', 'max:100'],
-            'volume_ml'         => ['nullable', 'integer', 'min:1'],
-            'price'             => ['required', 'numeric', 'min:0'],
-            'sale_price'        => ['nullable', 'numeric', 'min:0', 'lte:price'],
-            'stock'             => ['required', 'integer', 'min:0'],
-            'status'            => ['required', 'string', Rule::in(ProductStatus::values())],
-            'is_featured'       => ['sometimes', 'boolean'],
-            'sort_order'        => ['nullable', 'integer', 'min:1'],
+            'description' => ['nullable', 'string'],
+            'image' => ['nullable', 'string', 'url', 'max:255'],
+            'gender' => ['required', 'string', Rule::in(ProductGender::values())],
+            'concentration' => ['nullable', 'string', 'max:100'],
+            'volume_ml' => ['nullable', 'integer', 'min:1'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'sale_price' => ['nullable', 'numeric', 'min:0', 'lte:price'],
+            'stock' => ['prohibited'],
+            'status' => ['required', 'string', Rule::in(ProductStatus::values())],
+            'is_featured' => ['sometimes', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
     public function messages(): array
     {
-        return (new StoreProductRequest())->messages();
+        return [
+            ...(new StoreProductRequest)->messages(),
+            'stock.prohibited' => 'Tồn kho chỉ được cập nhật trong module quản lý tồn kho.',
+        ];
     }
 
     protected function prepareForValidation(): void

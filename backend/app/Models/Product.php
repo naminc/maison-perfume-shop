@@ -69,6 +69,11 @@ class Product extends Model
         return $this->reviews()->approved();
     }
 
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ProductStatus::Active->value);

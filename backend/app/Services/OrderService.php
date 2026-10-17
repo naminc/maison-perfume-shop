@@ -15,6 +15,7 @@ use App\Notifications\Order\OrderPlacedNotification;
 use App\Notifications\Order\OrderStatusUpdatedNotification;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
 use App\Services\Interfaces\CouponServiceInterface;
+use App\Services\Interfaces\InventoryServiceInterface;
 use App\Services\Interfaces\OrderServiceInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
@@ -41,6 +42,7 @@ class OrderService extends BaseService implements OrderServiceInterface
     public function __construct(
         protected OrderRepositoryInterface $orderRepository,
         protected CouponServiceInterface $couponService,
+        protected InventoryServiceInterface $inventoryService,
     ) {}
 
     public function createFromCheckout(User $user, array $payload): array
@@ -92,7 +94,11 @@ class OrderService extends BaseService implements OrderServiceInterface
             $order->items()->createMany($orderItems);
 
             foreach ($items as $productId => $quantity) {
-                $products->get($productId)->decrement('stock', $quantity);
+                $this->inventoryService->decreaseForOrder(
+                    $products->get($productId),
+                    $quantity,
+                    $order,
+                );
             }
 
             if ($couponPreview['coupon']) {
@@ -339,10 +345,15 @@ class OrderService extends BaseService implements OrderServiceInterface
                 continue;
             }
 
-            Product::withTrashed()
-                ->whereKey($item->product_id)
-                ->lockForUpdate()
-                ->increment('stock', $item->quantity);
+            $product = Product::withTrashed()->find($item->product_id);
+
+            if ($product) {
+                $this->inventoryService->restoreForCancelledOrder(
+                    $product,
+                    $item->quantity,
+                    $order,
+                );
+            }
         }
     }
 

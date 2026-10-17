@@ -9,6 +9,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
     require __DIR__ . '/v1/brands.php';
     require __DIR__ . '/v1/products.php';
     require __DIR__ . '/v1/coupons.php';
+    require __DIR__ . '/v1/contacts.php';
+    require __DIR__ . '/v1/posts.php';
     require __DIR__ . '/v1/orders.php';
     require __DIR__ . '/v1/settings.php';
 

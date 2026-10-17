@@ -52,7 +52,7 @@ export interface ProductPayload {
   volume_ml?: number | null;
   price: number;
   sale_price?: number | null;
-  stock: number;
+  stock?: number;
   status: ProductStatus;
   is_featured?: boolean;
   sort_order?: number;

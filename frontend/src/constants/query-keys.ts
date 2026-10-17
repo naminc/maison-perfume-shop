@@ -5,6 +5,11 @@ const ADMIN_COUPONS_KEY = ['admin', 'coupons'] as const;
 const ADMIN_PRODUCT_REVIEWS_KEY = ['admin', 'product-reviews'] as const;
 const ADMIN_ORDERS_KEY = ['admin', 'orders'] as const;
 const ADMIN_USERS_KEY = ['admin', 'users'] as const;
+const ADMIN_DASHBOARD_KEY = ['admin', 'dashboard'] as const;
+const ADMIN_CONTACTS_KEY = ['admin', 'contacts'] as const;
+const ADMIN_POSTS_KEY = ['admin', 'posts'] as const;
+const ADMIN_INVENTORY_KEY = ['admin', 'inventory'] as const;
+const POSTS_KEY = ['posts'] as const;
 const ACCOUNT_ORDERS_KEY = ['account', 'orders'] as const;
 const ACCOUNT_PRODUCT_REVIEWS_KEY = ['account', 'product-reviews'] as const;
 const PRODUCTS_KEY = ['products'] as const;
@@ -48,9 +53,29 @@ export const QUERY_KEYS = {
       list:   (params: Record<string, unknown> = {}) => [...ADMIN_USERS_KEY, 'list', params] as const,
       detail: (id: number | string) => [...ADMIN_USERS_KEY, 'detail', id] as const,
     },
+    dashboard: {
+      all: ADMIN_DASHBOARD_KEY,
+      stats: (params: Record<string, unknown> = {}) => [...ADMIN_DASHBOARD_KEY, 'stats', params] as const,
+    },
+    contacts: {
+      all: ADMIN_CONTACTS_KEY,
+      list:   (params: Record<string, unknown> = {}) => [...ADMIN_CONTACTS_KEY, 'list', params] as const,
+      detail: (id: number | string) => [...ADMIN_CONTACTS_KEY, 'detail', id] as const,
+    },
+    posts: {
+      all: ADMIN_POSTS_KEY,
+      list:   (params: Record<string, unknown> = {}) => [...ADMIN_POSTS_KEY, 'list', params] as const,
+      detail: (id: number | string) => [...ADMIN_POSTS_KEY, 'detail', id] as const,
+    },
+    inventory: {
+      all: ADMIN_INVENTORY_KEY,
+      movements: (params: Record<string, unknown> = {}) => [...ADMIN_INVENTORY_KEY, 'movements', params] as const,
+      product: (id: number | string, params: Record<string, unknown> = {}) => [...ADMIN_INVENTORY_KEY, 'product', id, params] as const,
+    },
   },
   account: {
     profile:   ['account', 'profile'] as const,
+    wishlist:  ['account', 'wishlist'] as const,
     sessions:  (page: number) => ['account', 'sessions', page] as const,
     addresses: ['account', 'addresses'] as const,
     orders: {
@@ -83,6 +108,11 @@ export const QUERY_KEYS = {
     all: PRODUCT_REVIEWS_KEY,
     list:    (slug: string, params: Record<string, unknown> = {}) => [...PRODUCT_REVIEWS_KEY, slug, 'list', params] as const,
     summary: (slug: string) => [...PRODUCT_REVIEWS_KEY, slug, 'summary'] as const,
+  },
+  posts: {
+    all: POSTS_KEY,
+    list:   (params: Record<string, unknown> = {}) => [...POSTS_KEY, 'list', params] as const,
+    detail: (slug: string) => [...POSTS_KEY, 'detail', slug] as const,
   },
   settings: {
     public: ['settings', 'public'] as const,

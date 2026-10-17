@@ -2,19 +2,18 @@ import { Link } from "react-router-dom";
 import { Heart, Package, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import AccountLayout from "@/layouts/AccountLayout";
-import { useProducts } from "@/hooks/useProducts";
 import { useStorefront } from "@/hooks/useStorefront";
+import { useWishlistProducts } from "@/hooks/useWishlist";
 import { formatVnd, productPrice } from "@/lib/product-utils";
 import type { Product } from "@/types/product";
 
 export default function Wishlist() {
-  const { wishlistIds, toggleWishlist, addToCart } = useStorefront();
-  const productsQuery = useProducts({ per_page: 100 });
-  const products = productsQuery.data?.data ?? [];
-  const items = products.filter((product) => wishlistIds.includes(product.id));
+  const { toggleWishlist, addToCart } = useStorefront();
+  const wishlistQuery = useWishlistProducts();
+  const items = wishlistQuery.data ?? [];
 
-  const remove = (id: number) => {
-    toggleWishlist(id);
+  const remove = (product: Product) => {
+    toggleWishlist(product.id, product);
     toast.success("Đã xoá khỏi danh sách yêu thích");
   };
 
@@ -26,9 +25,9 @@ export default function Wishlist() {
 
   return (
     <AccountLayout title="Sản phẩm yêu thích" subtitle="Những sản phẩm bạn đã lưu lại.">
-      {productsQuery.isLoading ? (
+      {wishlistQuery.isLoading ? (
         <WishlistSkeleton />
-      ) : productsQuery.isError ? (
+      ) : wishlistQuery.isError ? (
         <StateBox title="Không thể tải danh sách yêu thích" description="Vui lòng thử lại sau." />
       ) : items.length === 0 ? (
         <EmptyWishlist />
@@ -66,7 +65,7 @@ export default function Wishlist() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => remove(product.id)}
+                    onClick={() => remove(product)}
                     aria-label="Xoá"
                     className="grid h-9 w-9 place-items-center rounded-xl border border-stone-200 text-stone-500 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
                   >

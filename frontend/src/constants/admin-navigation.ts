@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Tags,
   Users,
+  Warehouse,
   type LucideIcon,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: "Danh mục", href: "/admin/categories", icon: Tags },
   { label: "Thương hiệu", href: "/admin/brands", icon: BadgeCheck },
   { label: "Sản phẩm", href: "/admin/products", icon: Package },
+  { label: "Tồn kho", href: "/admin/inventory", icon: Warehouse },
   { label: "Mã giảm giá", href: "/admin/coupons", icon: BadgePercent },
   { label: "Đánh giá", href: "/admin/product-reviews", icon: MessageSquare },
   { label: "Đơn hàng", href: "/admin/orders", icon: ShoppingCart },

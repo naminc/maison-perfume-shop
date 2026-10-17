@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { AxiosError } from "axios";
@@ -76,7 +77,7 @@ export function ProductFormSheet({
   }, [product, open, reset]);
 
   const onSubmit = (values: ProductFormValues) => {
-    const payload = toPayload(values);
+    const payload = toPayload(values, isEditMode);
 
     const handlers = {
       onSuccess: () => {
@@ -238,7 +239,24 @@ export function ProductFormSheet({
                 <Input id="sale_price" type="number" min={0} step="1000" className="h-9" placeholder="Tuỳ chọn" {...register("sale_price")} />
               </Field>
               <Field error={errors.stock?.message} label="Tồn kho *" htmlFor="stock">
-                <Input id="stock" type="number" min={0} className="h-9" placeholder="0" {...register("stock")} />
+                <Input
+                  id="stock"
+                  type="number"
+                  min={0}
+                  readOnly={isEditMode}
+                  className={cn("h-9", isEditMode && "cursor-not-allowed bg-muted")}
+                  placeholder="0"
+                  {...register("stock")}
+                />
+                {isEditMode ? (
+                  <p className="text-xs text-muted-foreground">
+                    Tồn kho được cập nhật tại{" "}
+                    <Link className="font-medium text-primary hover:underline" to="/admin/inventory">
+                      Quản lý kho
+                    </Link>
+                    .
+                  </p>
+                ) : null}
               </Field>
             </div>
           </fieldset>
@@ -354,7 +372,7 @@ function getDefaultValues(product?: Product | null): ProductFormInput {
   };
 }
 
-function toPayload(values: ProductFormValues): ProductPayload {
+function toPayload(values: ProductFormValues, isEditMode: boolean): ProductPayload {
   return {
     brand_id: values.brand_id ?? null,
     category_id: values.category_id ?? null,
@@ -369,7 +387,7 @@ function toPayload(values: ProductFormValues): ProductPayload {
     volume_ml: values.volume_ml ?? null,
     price: values.price,
     sale_price: values.sale_price ?? null,
-    stock: values.stock,
+    ...(!isEditMode ? { stock: values.stock } : {}),
     status: values.status,
     is_featured: values.is_featured ?? false,
     sort_order: values.sort_order,

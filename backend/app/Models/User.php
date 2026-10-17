@@ -50,4 +50,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(ProductReview::class);
     }
+
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
 }

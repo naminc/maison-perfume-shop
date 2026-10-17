@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\Account\PasswordController;
 use App\Http\Controllers\Api\V1\Account\ProfileController;
 use App\Http\Controllers\Api\V1\Account\ProductReviewController;
 use App\Http\Controllers\Api\V1\Account\SessionController;
+use App\Http\Controllers\Api\V1\Account\WishlistController;
 use App\Http\Controllers\Api\V1\OrderController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,10 @@ Route::prefix('account')->name('account.')->group(function () {
     Route::patch('addresses/{id}/default', [AddressController::class, 'setDefault'])->name('addresses.set-default');
 
     Route::patch('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+
+    Route::get('wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+    Route::post('wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+    Route::delete('wishlist/{productId}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
 
     Route::get('reviews', [ProductReviewController::class, 'index'])->name('reviews.index');
     Route::get('reviewable-items', [ProductReviewController::class, 'reviewableItems'])->name('reviews.reviewable-items');

@@ -1,7 +1,7 @@
 import { useState } from "react";
+import type { AxiosError } from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
 import { Clock, Facebook, Instagram, Mail, MapPin, Phone, type LucideIcon } from "lucide-react";
 import ContentPage from "@/components/site/ContentPage";
@@ -9,18 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { contactApi } from "@/api/contact";
 import { getPhoneHref } from "@/constants/site-settings";
 import { usePublicSettings } from "@/hooks/usePublicSettings";
+import { wasApiConnectionNotified } from "@/lib/api";
 import { formatVietnamPhone } from "@/lib/phone";
+import { contactFormSchema, type ContactFormValues } from "@/schemas/contact";
+import type { ApiErrorResponse } from "@/types/auth";
 
-const schema = z.object({
-  name: z.string().trim().min(2, "Vui lòng nhập họ tên").max(100),
-  email: z.string().trim().email("Email không hợp lệ").max(255),
-  phone: z.string().trim().max(20).optional().or(z.literal("")),
-  message: z.string().trim().min(10, "Tin nhắn quá ngắn").max(1000),
-});
-
-type FormValues = z.infer<typeof schema>;
+type FormValues = ContactFormValues;
 
 type ContactInfo = {
   icon: LucideIcon;
@@ -38,7 +35,7 @@ export default function Contact() {
     ...publicSettings,
     phone: formatVietnamPhone(publicSettings.phone),
   };
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(contactFormSchema) });
   const info = [
     settings.phone ? { icon: Phone, t: "Hotline", d: settings.phone, d2: "8:00 - 22:00 hàng ngày", href: phoneHref } : null,
     settings.contact_email ? { icon: Mail, t: "Email", d: settings.contact_email, d2: "Phản hồi trong 24h", href: `mailto:${settings.contact_email}` } : null,
@@ -46,12 +43,31 @@ export default function Contact() {
     { icon: Clock, t: "Giờ làm việc", d: "Thứ 2 - Chủ nhật", d2: "8:00 - 22:00" },
   ].filter((item): item is ContactInfo => Boolean(item));
 
-  const onSubmit = async (_d: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setLoading(false);
-    toast.success("Cảm ơn bạn! Maison sẽ phản hồi trong vòng 24 giờ.");
-    reset();
+
+    try {
+      const result = await contactApi.submit({
+        name: values.name,
+        email: values.email,
+        phone: values.phone || undefined,
+        subject: values.subject || undefined,
+        message: values.message,
+      });
+
+      toast.success(result.message || "Cảm ơn bạn! Maison sẽ phản hồi trong vòng 24 giờ.");
+      reset();
+    } catch (error) {
+      if (!wasApiConnectionNotified(error)) {
+        const err = error as AxiosError<ApiErrorResponse>;
+        const apiErrors = err.response?.data?.errors as Record<string, string[]> | undefined;
+        const firstError = apiErrors ? Object.values(apiErrors).flat().find(Boolean) : undefined;
+
+        toast.error(firstError ?? err.response?.data?.message ?? "Gửi tin nhắn thất bại. Vui lòng thử lại sau.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,6 +91,11 @@ export default function Contact() {
               <Label htmlFor="email">Email *</Label>
               <Input id="email" type="email" className="h-11 rounded-lg border-input bg-stone-50" {...register("email")} />
               {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="subject">Tiêu đề</Label>
+              <Input id="subject" className="h-11 rounded-lg border-input bg-stone-50" placeholder="Ví dụ: Cần tư vấn nước hoa" {...register("subject")} />
+              {errors.subject && <p className="text-xs text-red-600">{errors.subject.message}</p>}
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="message">Nội dung *</Label>
